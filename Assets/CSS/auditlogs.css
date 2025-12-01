@@ -231,6 +231,7 @@
 .badge {
     padding: 6px 12px;
     border-radius: 12px;
+    min-width: 50px;
     font-size: 12px;
     font-weight: bold;
     color: white;
