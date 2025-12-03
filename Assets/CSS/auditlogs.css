@@ -2,7 +2,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    padding: 25px 20px;
+    padding: 14px 20px;
 }
 
 .section-top {
@@ -10,12 +10,11 @@
     width: 100%;
     justify-content: space-between;
     padding: 10px;
-    margin-bottom: 15px;
 }
 
 .section-top h2 {
     margin: 0;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     font-size: 24px;
     color: #1E2A35;
 }
@@ -29,7 +28,8 @@
     padding: 10px 20px;
     background-color: #FFFFFF;
     color: #1E2A35;
-    border: 2px solid #EEF2F7;
+    border: 1px solid #E5E7EB;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
@@ -40,8 +40,15 @@
 }
 
 .section-top button:hover {
-    background: #1976D2;
-    color: #FFFFFF;
+    background: #EDF6F8;
+    border-color: #4BA3C3;
+    color: #4BA3C3;
+}
+
+.section-top button:active {
+    background-color: #DBEEF2;
+    border-color: #4BA3C3; 
+    color: #2E7A99;
 }
 
 .fa-solid {
@@ -56,11 +63,11 @@
     background: #FFFFFF;
     padding: 15px 25px;
     border: 2px solid #EEF2F7;
-    border-radius: 10px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.03);
+    border-radius: 20px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
     margin-top: 10px;
     max-height: fit-content;
-    margin-bottom: 25px;
+    margin-bottom: 15px;
     flex: 1;
 }
 
@@ -87,26 +94,38 @@
     padding: 8px 12px;
 }
 
+.audit-log-filter select:focus, .audit-log-filter input:focus {
+    border-color: #4BA3C3;
+    outline: none;     
+    box-shadow: 0 0 0 3px rgba(75, 163, 195, 0.2); 
+}
+
 .audit-log-filter button {
     background: #4BA3C3;
     color: #FFFFFF;
     font-weight: bold;
     border: none;
     border-radius: 5px;
-    margin-top: 18px;
-    padding: 8px 24px;
+    margin-top: 16px;
+    padding: 10px 24px;
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
 
 .audit-log-filter button:hover {
-    background: #1565C0;
+    background: #3D8BAB;
+}
+
+.audit-log-filter button:active {
+    background-color: #2E7A99; 
+    transform: translateY(1px); 
 }
 
 .audit-log-table-wrapper {
     background: #FFFFFF;
-    border-radius: 12px;      
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.03);
+    border-radius: 20px;      
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
     border: 1px solid #EEF2F7;
     overflow: hidden;        
     width: 100%;
@@ -119,22 +138,21 @@
 }
 
 .audit-log-table-wrapper table th {
-    background: #F9FAFB;       
+    background: #F9FAFB;
     color: #5F7383;          
-    padding: 16px 20px;      
+    padding: 12px 20px;
+    letter-spacing: 0.8px;
     font-size: 11px;        
-    font-weight: 700;         
-    text-transform: uppercase; 
-    letter-spacing: 0.8px;    
-    text-align: left;     
+    font-weight: 700;        
+    text-align: left;
     border-bottom: 2px solid #EEF2F7;
 }
 
 .audit-log-table-wrapper table td {
     background: #FFFFFF;
     color: #1E2A35;          
-    padding: 16px 20px;     
-    font-size: 13px;
+    padding: 8px 22px;     
+    font-size: 12px;
     border-bottom: 1px solid #EEF2F7; 
     vertical-align: middle;  
     text-align: left;        
@@ -142,13 +160,16 @@
     cursor: context-menu;
 }
 
+#action-data #logs-details {
+    margin-left: 12px;
+}
+
 .audit-log-table-wrapper table tr:last-child td {
     border-bottom: none;
 }
 
 .audit-log-table-wrapper table tbody tr:hover td {
-    background-color: #F8FBFD;
-    font-weight: bold;
+    background-color: #E6F7FF;
 }
 
 #no-found {
@@ -210,9 +231,9 @@
 .badge {
     padding: 6px 12px;
     border-radius: 12px;
-    min-width: 50px;
     font-size: 12px;
     font-weight: bold;
+    min-width: 50px;
     color: white;
     text-transform: uppercase;
     display: inline-block;
