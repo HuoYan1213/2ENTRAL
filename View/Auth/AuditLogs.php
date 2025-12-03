@@ -117,4 +117,45 @@ $logs = $controller->auditLogs($filter_user, $filter_action, $filter_sdate, $fil
     </div>
 </div>
 
+<script>
+    $(document).ready(function() {
+        const auditLogsPath = '../../View/Auth/AuditLogs.php';
+        const container_selector = '#ajax-result';
+        
+        $('.pagination .page-button').on('click', function(e) {
+            if ($(this).hasClass('disabled')) return false;
+            e.preventDefault();
 
+            const urlParams = $(this).attr('href');
+            $(this).closest('.audit-logs').parent().load(auditLogsPath + urlParams)
+        });
+
+        $('.audit-log-filter').on('submit', function(e) {
+            e.preventDefault();
+
+            const formData = $(this).serialize();
+            const fullUrl = auditLogsPath + '?page=1&' + formData;
+            
+            $(this).closest('.audit-logs').parent().load(fullUrl);
+        });
+
+        $('#export-button').on('click', function(e) {
+            e.preventDefault();
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            const formData = $('.audit-log-filter').serialize();
+            
+            window.location.href = auditLogsPath + '?export=true&' + formData;
+        });
+    });
+
+
+    document.getElementById('export-button').addEventListener('click', function(e) {
+        e.preventDefault();
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.set('export', 'true');
+        
+        const auditLogsPath = '../Auth/AuditLogs.php'; 
+        window.location.href = auditLogsPath + '?' + urlParams.toString();
+    });
+</script>

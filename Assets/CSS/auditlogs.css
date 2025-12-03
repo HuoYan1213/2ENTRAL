@@ -156,5 +156,72 @@
     font-weight: bold;
     color: #1E2A35;
     text-align: center;
-    padding: 180px 0px;
+    padding: 230px 0px;
 }
+
+.pagination {
+    background: #FFFFFF;
+    color: #1E2A35;
+    border: 1px solid #EEF2F7;
+    border-radius: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    margin: auto auto;
+    width: fit-content;
+    padding: 15px 20px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    gap: 15px;
+}
+
+.pagination i {
+    margin: auto;
+}
+
+#page-number {
+    font-size: 14px;
+    margin: 0 15px; 
+    font-weight: bold; 
+    color: #5F7383;
+}
+
+.page-button {
+    display: flex;
+    justify-content: center;
+    text-align: center;
+    align-items: center;
+    text-decoration: none;
+    color: #94C1FF;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.page-button:hover {
+    color: #4BA3C3;
+}
+
+.page-button.disabled {
+    color: #BBBBBB;
+    cursor: not-allowed;
+}
+
+/* Action Badges */
+.badge {
+    padding: 6px 12px;
+    border-radius: 12px;
+    min-width: 50px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    text-transform: uppercase;
+    display: inline-block;
+    text-align: center;
+}
+
+.badge-login  { background-color: #2196F3; }
+.badge-logout { background-color: #6C757D; }
+.badge-create { background-color: #28A745; }
+.badge-update { background-color: #FD7E14; }
+.badge-delete { background-color: #DC3545; }
+.badge-default { background-color: #333333; }
