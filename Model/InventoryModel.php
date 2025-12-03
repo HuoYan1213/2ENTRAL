@@ -49,29 +49,49 @@ class InventoryModel {
     }
 
     // 调整库存
+    // 调整库存 (修改版：包含商品名和旧库存记录)
     public function adjustStock($productId, $quantity, $reason, $userId) {
         // 开始事务
         $this->conn->begin_transaction();
 
         try {
-            // 获取当前库存
-            $currentStock = $this->getProductStock($productId);
+            // 1. 获取当前库存 和 商品名称 (新增查询 ProductName)
+            $sql = "SELECT Stock, ProductName FROM products WHERE ProductID = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("s", $productId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $row = $result->fetch_assoc();
+
+            if (!$row) {
+                throw new Exception("Product not found");
+            }
+
+            $currentStock = $row['Stock'];
+            $productName = $row['ProductName']; // 获取商品名
+
+            // 2. 计算新库存
             $newStock = $currentStock + $quantity;
             
             if ($newStock < 0) {
                 throw new Exception("Stock cannot be negative");
             }
 
-            // 更新产品库存
+            // 3. 更新产品库存
             $updateSql = "UPDATE products SET Stock = ? WHERE ProductID = ?";
-            $stmt = $this->conn->prepare($updateSql);
-            $stmt->bind_param("is", $newStock, $productId);
-            $stmt->execute();
+            $updateStmt = $this->conn->prepare($updateSql);
+            $updateStmt->bind_param("is", $newStock, $productId);
+            $updateStmt->execute();
 
-            // 记录库存日志
-            $logDetails = $quantity >= 0 ? 
-                "Stock increased by {$quantity} - {$reason} (New Stock: {$newStock})" : 
-                "Stock decreased by " . abs($quantity) . " - {$reason} (New Stock: {$newStock})";
+            // 4. 记录库存日志 (修改为你想要的格式)
+            // 格式: Update: '商品名' '原因' ('原本库存'->'更新库存')
+            $logDetails = sprintf(
+                "Update: %s %s (%d ➡️ %d)", 
+                $productName, 
+                $reason, 
+                $currentStock, 
+                $newStock
+            );
             
             $logSql = "INSERT INTO inventory_logs (LogsDetails, ProductID, UserID) 
                        VALUES (?, ?, ?)";
