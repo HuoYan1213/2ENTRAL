@@ -6,7 +6,7 @@ body, html {
     display: flex;
     width: 100%;
     height: 100vh;
-    overflow-y: hidden;
+    overflow: hidden;
 }
 
 nav {
@@ -14,11 +14,17 @@ nav {
     flex-direction: column;
     background-color: #FFFFFF;
     color: #412A35;
-    height: 100%;
-    width: 100%;
-    flex: 1;
+    height: 100vh;
+    width: 280px;
     min-width: 280px;
     border-right: 2px solid #EEF2F7;
+    /* 固定左侧菜单 */
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 1000;
+    overflow-y: auto;
 }
 
 .logo {
@@ -108,11 +114,155 @@ nav div #logout-button:hover {
 #ajax-result {
     padding: 0;
     margin: 0;
-    width: 100%;
-    height: 100%;
+    width: calc(100% - 280px);
+    margin-left: 280px;
+    height: 100vh;
+    overflow-y: auto; /* 只有内容区域滚动 */
+    background-color: #f4f4f4;
 }
 
 #ajax-result > * {
     max-width: 100%;
     box-sizing: border-box;
+}
+
+/* ===== 响应式设计 ===== */
+
+/* 平板设备 (768px 及以下) */
+@media (max-width: 768px) {
+    body, html {
+        flex-direction: row; /* 保持水平布局 */
+        height: 100vh;
+        overflow: hidden;
+    }
+    
+    nav {
+        width: 60px; /* 缩小菜单宽度 */
+        min-width: 60px;
+        position: fixed;
+        height: 100vh;
+        overflow-x: hidden;
+        transition: width 0.3s ease;
+        z-index: 1000;
+    }
+    
+    nav:hover {
+        width: 280px; /* 悬停时显示完整菜单 */
+    }
+    
+    #ajax-result {
+        width: calc(100% - 60px);
+        margin-left: 60px;
+    }
+    
+    /* 隐藏菜单文字，只显示图标 */
+    .overview span, .management span, .system span, .profile span {
+        display: none;
+    }
+    
+    nav div button {
+        justify-content: center;
+        padding: 15px 10px;
+    }
+    
+    .fa-solid, .material-icons {
+        margin-right: 0;
+    }
+    
+    .logo {
+        padding: 15px 10px;
+    }
+    
+    .logo img {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+    }
+}
+
+/* 手机设备 (480px 及以下) */
+@media (max-width: 480px) {
+    /* 移动端汉堡菜单方案 */
+    nav {
+        width: 100%;
+        height: 60px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: auto;
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+        z-index: 1000;
+    }
+    
+    .sidebar {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .logo {
+        padding: 10px;
+        min-width: 60px;
+    }
+    
+    .logo img {
+        width: 40px;
+        height: 40px;
+    }
+    
+    /* 隐藏分类标题 */
+    .overview span, .management span, .system span, .profile span {
+        display: none;
+    }
+    
+    /* 水平排列按钮 */
+    .overview, .management, .system, .profile {
+        display: flex;
+        flex-direction: row;
+        margin: 0;
+        padding: 0;
+        width: auto;
+    }
+    
+    nav div button {
+        padding: 10px 15px;
+        min-width: 60px;
+        justify-content: center;
+        border-left: none;
+        border-bottom: 3px solid transparent;
+    }
+    
+    nav div button:hover, .active {
+        border-left: none;
+        border-bottom: 3px solid #4BA3C3;
+    }
+    
+    .fa-solid, .material-icons {
+        margin-right: 0;
+        font-size: 18px;
+    }
+    
+    /* 调整内容区域 */
+    #ajax-result {
+        width: 100%;
+        margin-left: 0;
+        margin-top: 60px; /* 为顶部菜单留出空间 */
+        height: calc(100vh - 60px);
+    }
+}
+
+/* 超小屏幕手机 (360px 及以下) */
+@media (max-width: 360px) {
+    nav div button {
+        padding: 10px 12px;
+        min-width: 50px;
+        font-size: 12px;
+    }
+    
+    .fa-solid, .material-icons {
+        font-size: 16px;
+    }
 }
