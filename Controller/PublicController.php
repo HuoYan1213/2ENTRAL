@@ -88,5 +88,6 @@ class PublicController {
        
         header("Location: /View/Auth/Splash.php");
         exit();
-    }   
+    }
 }
+?>

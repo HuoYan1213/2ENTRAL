@@ -6,7 +6,7 @@ if (!isset($_SESSION['user'])) {
     header('Location: /View/Public/AccessDenied.php');
     exit();
 }
-else {    
+else {
     $CURRENT_NAME = $_SESSION['user']['name'] ?? '';
     $CURRENT_ROLE = $_SESSION['user']['role'] ?? '';
     $AVATAR_PATH = $_SESSION['user']['avatar'] ?? '';
@@ -51,6 +51,7 @@ else {
                     <button class="ajax-button" data-get="AuditLogs.php"><i class="fa-solid fa-file-shield"></i>Audit Logs</button>
                     <button class="ajax-button" data-get="RecycleBin.php"><i class="fa-solid fa-box-archive"></i>Recycle Bin</button>
                     <button class="ajax-button" data-get="UsersRoles.php"><i class="fa-solid fa-users-gear"></i>Users & Roles</button>
+
                 </div>
             <?php } ?>
 
