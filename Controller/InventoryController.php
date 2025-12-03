@@ -2,24 +2,20 @@
 session_start();
 require_once __DIR__ . '/../Model/InventoryModel.php';
 
-// --- 必须添加的部分开始 ---
-// 初始化控制器并根据 URL 的 action 参数执行对应方法
 $controller = new InventoryController();
 
 if (isset($_GET['action'])) {
     $action = $_GET['action'];
     
-    // 检查方法是否存在，防止调用不存在的函数
+ 
     if (method_exists($controller, $action)) {
         $controller->$action();
     } else {
-        // 如果 action 不存在，返回错误
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
         exit();
     }
 }
-// --- 必须添加的部分结束 ---
 
 class InventoryController {
     private $model;
@@ -36,8 +32,6 @@ class InventoryController {
 
         $stats = $this->model->getInventoryStats();
         $categoryStats = $this->model->getCategoryStats();
-
-        // 计算总警报数（低库存 + 缺货）
         $totalAlerts = ($stats['low_stock_count'] ?? 0) + ($stats['out_of_stock_count'] ?? 0);
 
         $data = [
@@ -56,7 +50,6 @@ class InventoryController {
     }
 
     public function adjustStock() {
-        // 确保返回 JSON，即使出错
         header('Content-Type: application/json');
 
         if (!isset($_SESSION['user'])) {
@@ -74,11 +67,8 @@ class InventoryController {
                 $success = $this->model->adjustStock($productId, $quantity, $reason, $userId);
                 
                 if ($success) {
-                    // 获取更新后的完整数据
                     $stats = $this->model->getInventoryStats();
                     $products = $this->model->getAllProducts();
-                    
-                    // 获取并格式化日志
                     $logs = $this->model->getInventoryLogs();
                     foreach ($logs as &$log) {
                         $log['FormattedDate'] = date('M j, Y g:i A', strtotime($log['CreatedAt']));
@@ -124,7 +114,7 @@ class InventoryController {
         exit();
     }
 
-    // 获取所有产品数据（用于前端更新）
+
     public function getAllProducts() {
         header('Content-Type: application/json');
         
@@ -136,8 +126,6 @@ class InventoryController {
         try {
             $products = $this->model->getAllProducts();
             $stats = $this->model->getInventoryStats();
-            
-            // 获取并格式化日志
             $logs = $this->model->getInventoryLogs();
             foreach ($logs as &$log) {
                 $log['FormattedDate'] = date('M j, Y g:i A', strtotime($log['CreatedAt']));

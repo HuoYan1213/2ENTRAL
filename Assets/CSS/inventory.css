@@ -105,7 +105,7 @@
 }
 
 .stat-card.info::after {
-    display: none; /* Hide click hint for inventory value card */
+    display: none; 
 }
 
 .stat-card.danger { border-left-color: var(--danger); }
@@ -132,7 +132,7 @@
     opacity: 0.8;
 }
 
-/* Secondary Row (Value + Category) */
+
 .secondary-row {
     display: grid;
     grid-template-columns: 1.5fr 1fr;
@@ -164,7 +164,7 @@
     border-radius: 50%;
 }
 
-/* Category Module */
+
 .category-module {
     position: relative;
     height: 100%;
@@ -287,7 +287,7 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Filter Indicator */
+
 .filter-indicator {
     background: var(--bg-card);
     padding: 15px 20px;
@@ -314,7 +314,7 @@
     font-size: 12px;
 }
 
-/* Alert Message */
+
 .alert {
     padding: 15px 20px;
     border-radius: 8px;
@@ -340,7 +340,7 @@
     font-size: 18px;
 }
 
-/* Tabs & Search */
+
 .tabs-container {
     background: var(--bg-card);
     border-radius: 12px;
@@ -486,7 +486,7 @@ tr:hover {
 .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
 .btn-outline:hover { background: var(--border); }
 
-/* Modal */
+
 .modal {
     display: none;
     position: fixed;
@@ -569,7 +569,7 @@ tr:hover {
     margin-top: 25px;
 }
 
-/* Adjust Stock Modal Specifics */
+
 .adjustment-type-selector {
     display: flex;
     background: #f1f3f5;
@@ -620,7 +620,7 @@ tr:hover {
     transition: color 0.3s;
 }
 
-/* Empty State */
+
 .empty-state {
     text-align: center;
     padding: 60px 20px;
@@ -633,7 +633,6 @@ tr:hover {
     opacity: 0.5;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .inventory-container { padding: 20px; }
     .header { flex-direction: column; align-items: flex-start; gap: 15px; }
@@ -644,16 +643,14 @@ tr:hover {
     .search-container { width: 100%; }
 }
 
-/* --- Product Images & Lightbox --- */
 
-/* 表格中的缩略图样式 */
 .product-thumb {
     width: 50px;
     height: 50px;
     border-radius: 6px;
-    object-fit: cover; /* 保持比例裁剪，不变形 */
+    object-fit: cover;
     border: 1px solid var(--border);
-    cursor: zoom-in; /* 鼠标放上去显示放大镜 */
+    cursor: zoom-in; 
     transition: transform 0.2s;
     background-color: #f1f3f5;
 }
@@ -663,7 +660,7 @@ tr:hover {
     border-color: var(--primary);
 }
 
-/* 暂无图片的占位符样式 */
+
 .no-image-placeholder {
     width: 50px;
     height: 50px;
@@ -677,18 +674,18 @@ tr:hover {
     border: 1px dashed var(--border);
 }
 
-/* 图片查看弹窗 (Image Modal) */
+
 .image-modal {
     display: none;
     position: fixed;
-    z-index: 2000; /* 比普通 modal 更高 */
+    z-index: 2000; 
     padding-top: 50px;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgba(0, 0, 0, 0.85); /* 深色背景 */
+    background-color: rgba(0, 0, 0, 0.85);
     align-items: center;
     justify-content: center;
 }

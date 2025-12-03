@@ -9,7 +9,6 @@ class InventoryModel {
         $this->conn = $conn;
     }
 
-    // 获取所有产品和供应商信息
     public function getAllProducts() {
         $sql = "SELECT p.*, s.SupplierName, s.Email as SupplierEmail
                 FROM products p 
@@ -26,7 +25,7 @@ class InventoryModel {
         }
     }
 
-    // 获取库存日志
+
     public function getInventoryLogs($limit = 50) {
         $sql = "SELECT il.*, p.ProductName, u.UserName 
                 FROM inventory_logs il 
@@ -48,14 +47,10 @@ class InventoryModel {
         }
     }
 
-    // 调整库存
-    // 调整库存 (修改版：包含商品名和旧库存记录)
     public function adjustStock($productId, $quantity, $reason, $userId) {
-        // 开始事务
         $this->conn->begin_transaction();
 
         try {
-            // 1. 获取当前库存 和 商品名称 (新增查询 ProductName)
             $sql = "SELECT Stock, ProductName FROM products WHERE ProductID = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("s", $productId);
@@ -68,23 +63,18 @@ class InventoryModel {
             }
 
             $currentStock = $row['Stock'];
-            $productName = $row['ProductName']; // 获取商品名
-
-            // 2. 计算新库存
+            $productName = $row['ProductName']; 
             $newStock = $currentStock + $quantity;
             
             if ($newStock < 0) {
                 throw new Exception("Stock cannot be negative");
             }
 
-            // 3. 更新产品库存
+
             $updateSql = "UPDATE products SET Stock = ? WHERE ProductID = ?";
             $updateStmt = $this->conn->prepare($updateSql);
             $updateStmt->bind_param("is", $newStock, $productId);
             $updateStmt->execute();
-
-            // 4. 记录库存日志 (修改为你想要的格式)
-            // 格式: Update: '商品名' '原因' ('原本库存'->'更新库存')
             $logDetails = sprintf(
                 "Update: %s %s (%d ➡️ %d)", 
                 $productName, 
@@ -108,7 +98,6 @@ class InventoryModel {
         }
     }
 
-    // 获取低库存产品数量
     public function getLowStockCount() {
         $sql = "SELECT COUNT(*) as count 
                 FROM products 
@@ -124,7 +113,6 @@ class InventoryModel {
         }
     }
 
-    // 获取产品库存
     private function getProductStock($productId) {
         $sql = "SELECT Stock FROM products WHERE ProductID = ?";
         $stmt = $this->conn->prepare($sql);
@@ -135,7 +123,6 @@ class InventoryModel {
         return $row['Stock'] ?? 0;
     }
 
-    // 获取产品详情
     public function getProductById($productId) {
         $sql = "SELECT p.*, s.SupplierName 
                 FROM products p 
@@ -154,7 +141,7 @@ class InventoryModel {
         }
     }
 
-    // 获取库存统计信息
+
 public function getInventoryStats() {
     $sql = "SELECT 
                 COUNT(*) as total_products,
@@ -174,7 +161,7 @@ public function getInventoryStats() {
     }
 }
 
-    // 获取分类统计
+
     public function getCategoryStats() {
         $sql = "SELECT 
                     Category,

@@ -1,30 +1,27 @@
 <?php
 session_start();
 
-// 1. 访问控制
 if (!isset($_SESSION['user'])) {
     header('Location: /View/Public/AccessDenied.php');
     exit();
 }
 
-// 2. 数据获取逻辑 (修复点：加回这段代码，确保页面独立访问时也有数据)
+
 require_once __DIR__ . "/../../Model/InventoryModel.php";
 $model = new InventoryModel();
 
-// 获取各项数据
+
 $stats = $model->getInventoryStats();
 $categoryStats = $model->getCategoryStats();
 $products = $model->getAllProducts() ?? [];
 $logs = $model->getInventoryLogs() ?? [];
 
-// 准备视图所需的变量
 $totalProducts = $stats['total_products'] ?? 0;
 $lowStockCount = $stats['low_stock_count'] ?? 0;
 $outOfStockCount = $stats['out_of_stock_count'] ?? 0;
 $totalStockValue = $stats['total_inventory_value'] ?? 0;
 $currentUser = $_SESSION['user']['name'] ?? 'User';
 
-// 处理 Flash Message
 $message = [];
 if (isset($_SESSION['flash_message'])) {
     $message = $_SESSION['flash_message'];
@@ -209,7 +206,7 @@ if (isset($_SESSION['flash_message'])) {
                                     $stockStatus = 'good';
                                 }
 
-                                // 图片路径处理 (Assets 大写)
+                            
                                 $hasImage = !empty($product['ImagePath']);
                                 $filename = $hasImage ? rawurlencode($product['ImagePath']) : '';
                                 $imagePath = $hasImage ? "/Assets/Image/Product/" . $filename : "";
@@ -359,11 +356,9 @@ if (isset($_SESSION['flash_message'])) {
 </div>
 
 <script>
-// --- Global Variables ---
 let currentFilter = 'all';
 let activeCategory = 'all';
 let currentSearchTerm = '';
-// 这里的 json_encode 接收 PHP 的 $products 变量
 let allProducts = <?= json_encode($products ?? []) ?>; 
 
 const REASONS = {
@@ -371,12 +366,11 @@ const REASONS = {
     remove: ["Sold (Offline/Manual)", "Damaged Goods", "Theft/Loss", "Expired", "Quality Control Fail", "Stock Count Correction", "Manual Adjustment"]
 };
 
-// --- Initialization ---
 document.addEventListener('DOMContentLoaded', function() {
-    // Init logic if needed
+    
 });
 
-// --- Tab Logic ---
+
 function showTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
@@ -384,7 +378,7 @@ function showTab(tabName) {
     event.target.classList.add('active');
 }
 
-// --- Modal Logic ---
+
 const modal = document.getElementById('adjustModal');
 
 function openAdjustModal(productId, productName) {
@@ -402,7 +396,6 @@ function closeModal() {
 
 window.onclick = e => { if (e.target === modal) closeModal(); };
 
-// --- Stock Adjustment Logic ---
 function setAdjustmentType(type) {
     document.getElementById('adjustmentType').value = type;
     document.querySelectorAll('.type-btn').forEach(btn => {
@@ -438,7 +431,7 @@ function updateReasonDropdown(type) {
     });
 }
 
-// Form Submission
+
 document.getElementById('adjustStockForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
@@ -489,7 +482,6 @@ document.getElementById('adjustStockForm').addEventListener('submit', function(e
     });
 });
 
-// --- Data Refresh Logic ---
 function updateAllData() {
     fetch('/Controller/InventoryController.php?action=getAllProducts')
         .then(r => r.json())
@@ -525,7 +517,7 @@ function updateStatsCards(stats) {
     }
 }
 
-// --- Filtering & Searching ---
+
 function toggleCategoryDropdown() {
     document.getElementById('categoryDropdown').classList.toggle('show');
     document.querySelector('.category-trigger').classList.toggle('active');
@@ -586,7 +578,7 @@ document.getElementById('clear-filter').addEventListener('click', function() {
     refreshTableData();
 });
 
-// --- Master Refresh Function ---
+
 function refreshTableData() {
     let filtered = allProducts;
     
@@ -675,7 +667,7 @@ function updateProductsTable(products) {
         else if(stockStatus === 'warning') badge = '<span class="badge badge-warning">Watch</span>';
         else badge = '<span class="badge badge-success">Good</span>';
         
-        // --- JS 图片路径处理 ---
+    
         let imageHtml = '';
         if (product.ImagePath && product.ImagePath.trim() !== "") {
             const imgSrc = `/Assets/Image/Product/${encodeURIComponent(product.ImagePath)}`; 
@@ -725,7 +717,7 @@ function showAlert(message, type) {
     setTimeout(() => { if (alert.parentNode) alert.remove(); }, 5000);
 }
 
-// --- Image Modal Logic ---
+
 function openImageModal(src) {
     const modal = document.getElementById('imageModal');
     const modalImg = document.getElementById("fullSizeImage");
@@ -745,7 +737,7 @@ document.addEventListener('keydown', e => {
 });
 
 
-// --- 1. 图片加载辅助函数 ---
+
 function loadImage(url) {
     return new Promise((resolve) => {
         const img = new Image();
@@ -756,10 +748,9 @@ function loadImage(url) {
     });
 }
 
-// --- 2. 库加载辅助函数 (核心修复) ---
+
 function loadScript(url) {
     return new Promise((resolve, reject) => {
-        // 如果已经加载过，直接返回
         if (document.querySelector(`script[src="${url}"]`)) {
             resolve();
             return;
@@ -772,56 +763,47 @@ function loadScript(url) {
     });
 }
 
-// --- 3. 确保库按顺序加载 ---
+
 async function ensurePDFLibraries() {
-    // A. 加载核心库 jsPDF
     if (!window.jspdf) {
         await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
     }
     
-    // B. 建立桥梁 (修复 "Cannot read properties of undefined")
+
     if (!window.jsPDF && window.jspdf) {
         window.jsPDF = window.jspdf.jsPDF;
     }
 
-    // C. 加载插件 AutoTable (确保在 jsPDF 之后加载)
-    // 我们创建一个临时 doc 检查 autoTable 是否存在
     try {
         const tempDoc = new window.jsPDF();
         if (typeof tempDoc.autoTable !== 'function') {
             await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js");
         }
     } catch (e) {
-        // 如果出错，强制加载插件
         await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js");
     }
 }
 
-// --- 4. 主生成函数 ---
+
 async function generatePDF() {
     const btn = document.querySelector('button[onclick="generatePDF()"]');
     const originalText = btn.innerHTML;
     
-    // 状态 1: 加载库
+
     btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Loading Libs...';
     btn.disabled = true;
 
     try {
-        // 关键步骤：等待库加载完成
+
         await ensurePDFLibraries();
 
-        // 状态 2: 处理图片和数据
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
 
         const doc = new window.jsPDF();
-        
-        // --- 配置区域 ---
-        const logoUrl = '/Assets/Icon/2ENTRAL-1.png'; // 确认你的 Logo 路径
+        const logoUrl = '/Assets/Icon/2ENTRAL-1.png'; 
         const date = new Date().toLocaleString();
         const userName = "<?= htmlspecialchars($currentUser ?? 'User') ?>";
         const primaryColor = [75, 163, 195];
-
-        // --- A. 预加载资源 ---
         const productImages = {};
         const logoImg = await loadImage(logoUrl);
 
@@ -834,7 +816,7 @@ async function generatePDF() {
         });
         await Promise.all(imagePromises);
 
-        // --- B. 计算统计 ---
+
         let totalValue = 0;
         let lowStockItems = 0;
         let outOfStockItems = 0;
@@ -857,9 +839,7 @@ async function generatePDF() {
             categorySummary[p.Category].value += val;
         });
 
-        // --- C. 绘制内容 ---
-        
-        // Header
+
         if (logoImg) {
             doc.addImage(logoImg, 'PNG', 14, 10, 25, 25);
             doc.setFontSize(22);
@@ -879,7 +859,6 @@ async function generatePDF() {
         doc.text(`Generated on: ${date}`, 14, 42);
         doc.text(`Generated by: ${userName}`, 14, 47);
 
-        // Summary Box
         doc.setDrawColor(200);
         doc.setFillColor(248, 249, 250);
         doc.roundedRect(14, 52, 180, 25, 3, 3, 'FD');
@@ -899,7 +878,7 @@ async function generatePDF() {
         else doc.setTextColor(39, 174, 96);
         doc.text(`${lowStockItems} Low Stock / ${outOfStockItems} Out of Stock`, 100, 71);
 
-        // Table Data
+
         const tableBody = allProducts.map(p => {
             const stock = parseInt(p.Stock);
             const alert = parseInt(p.LowStockAlert);
@@ -918,7 +897,7 @@ async function generatePDF() {
             ];
         });
 
-        // Table Generation
+    
         doc.autoTable({
             startY: 85,
             head: [['Image', 'ID', 'Product Name', 'Category', 'Stock', 'Price', 'Status']],
@@ -932,21 +911,20 @@ async function generatePDF() {
             },
             styles: { fontSize: 9, valign: 'middle', cellPadding: 3 },
             
-            // --- 修复颜色逻辑 (放在 didParseCell) ---
             didParseCell: function(data) {
                 if (data.section === 'body' && data.column.index === 6) {
                     const status = data.cell.raw;
                     if (status === 'Out of Stock') {
-                        data.cell.styles.textColor = [231, 76, 60]; // Red
+                        data.cell.styles.textColor = [231, 76, 60]; 
                     } else if (status === 'Low Stock') {
-                        data.cell.styles.textColor = [243, 156, 18]; // Orange
+                        data.cell.styles.textColor = [243, 156, 18]; 
                     } else {
-                        data.cell.styles.textColor = [39, 174, 96]; // Green
+                        data.cell.styles.textColor = [39, 174, 96]; 
                     }
                 }
             },
 
-            // --- 修复图片逻辑 (放在 didDrawCell) ---
+    
             didDrawCell: function(data) {
                 if (data.section === 'body' && data.column.index === 0) {
                     const productId = data.row.raw[1]; 
@@ -961,7 +939,7 @@ async function generatePDF() {
         let finalY = doc.lastAutoTable.finalY + 15;
         if (finalY > 250) { doc.addPage(); finalY = 20; }
 
-        // Category Summary
+   
         doc.setFontSize(14);
         doc.setTextColor(44, 62, 80);
         doc.text("Summary by Category", 14, finalY);
@@ -982,7 +960,7 @@ async function generatePDF() {
             styles: { fontSize: 10 }
         });
 
-        // Signatures
+    
         const sigY = doc.lastAutoTable.finalY + 30;
         const pageHeight = doc.internal.pageSize.height;
         const signatureY = (sigY + 40 > pageHeight) ? sigY : Math.max(sigY, pageHeight - 40);
