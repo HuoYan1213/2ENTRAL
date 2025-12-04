@@ -36,7 +36,7 @@ if (isset($_SESSION['flash_message'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory Management</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="/assets/css/inventory.css">
+    <link rel="stylesheet" href="/Assets/CSS/inventory.css">
 
 <body>
 
@@ -216,9 +216,9 @@ if (isset($_SESSION['flash_message'])) {
                                     <?php if($hasImage): ?>
                                         <img src="<?= $imagePath ?>" 
                                             class="product-thumb" 
-                                            onclick="openImageModal('<?= $imagePath ?>')" 
+                                            onclick="openImageModal(this.src)" 
                                             alt="Img"
-                                            onerror="this.onerror=null;this.src='';this.parentNode.innerHTML='<div class=\'no-image-placeholder\'><i class=\'fas fa-image\'></i></div>';">
+                                            onerror="this.onerror=null; this.src='../../Assets/Image/Product/default-product.png';">
                                     <?php else: ?>
                                         <div class="no-image-placeholder">
                                             <i class="fas fa-image"></i>
@@ -352,7 +352,7 @@ if (isset($_SESSION['flash_message'])) {
 
 <div id="imageModal" class="image-modal" onclick="closeImageModal()">
     <span class="image-modal-close">&times;</span>
-    <img class="image-modal-content" id="fullSizeImage">
+    <img class="image-modal-content" id="fullSizeImage" onerror="this.onerror=null; this.src='../../Assets/Image/Product/default-product.png';">
 </div>
 
 <script>

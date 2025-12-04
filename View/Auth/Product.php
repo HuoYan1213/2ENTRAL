@@ -28,7 +28,7 @@ if (isset($_GET['sort'])) {
 if (isset($_GET['id'])) {
     // Single product view
     $product_id = $_GET['id'];
-    $sql = "SELECT ProductID, ProductName, Description, Category, Stock, Price, LowStockAlert, ImagePath, IsActive 
+        $sql = "SELECT ProductID, ProductName, Description, Category, Stock, Price, LowStockAlert, ImagePath, SupplierID, IsActive 
             FROM products 
             WHERE ProductID = ? AND IsActive = 'Active'";
     $stmt = $conn->prepare($sql);
@@ -50,7 +50,7 @@ if (isset($_GET['id'])) {
     }
 } else {
     // All products view - with search and sort functionality
-    $sql = "SELECT ProductID, ProductName, Description, Category, Stock, Price, LowStockAlert, ImagePath 
+        $sql = "SELECT ProductID, ProductName, Description, Category, Stock, Price, LowStockAlert, ImagePath, SupplierID 
             FROM products 
             WHERE IsActive = 'Active'";
     
@@ -100,6 +100,8 @@ if (isset($_GET['id'])) {
         min-height: 100vh;
     }
     
+    
+
     .product-header {
         background-color: white;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -479,10 +481,25 @@ if (isset($_GET['id'])) {
         margin-top: auto;
         padding-top: 10px;
     }
+
+    .add-product-btn {
+        background-color: #27ae60;
+        color: white;
+        border: none;
+        padding: 9px 14px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-weight: 700;
+        box-shadow: 0 4px 10px rgba(39,174,96,0.12);
+    }
+
+    .add-product-btn:hover {
+        background-color: #229954;
+    }
     
-    .view-btn {
+    .edit-btn {
         flex: 1;
-        background-color: #2c3e50;
+        background-color: #3498db;
         color: white;
         border: none;
         padding: 10px 15px;
@@ -495,8 +512,119 @@ if (isset($_GET['id'])) {
         font-weight: 500;
     }
     
-    .view-btn:hover {
+    .edit-btn:hover {
         background-color: #1a252f;
+    }
+    
+    /* Modal styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.4);
+        padding-top: 50px;
+    }
+    
+    .modal.show {
+        display: block;
+    }
+    
+    .modal-content {
+        background-color: #fff;
+        margin: auto;
+        padding: 20px;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 600px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .modal-header h2 {
+        margin: 0;
+        color: #1b3a57;
+    }
+    
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 28px;
+        cursor: pointer;
+        color: #999;
+    }
+    
+    .close-btn:hover {
+        color: #333;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #1b3a57;
+    }
+    
+    .form-group input, .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+    
+    .form-group textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+    
+    .form-actions button {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+    
+    .btn-save {
+        background-color: #27ae60;
+        color: white;
+    }
+    
+    .btn-save:hover {
+        background-color: #229954;
+    }
+    
+    .btn-cancel {
+        background-color: #e74c3c;
+        color: white;
+    }
+    
+    .btn-cancel:hover {
+        background-color: #c0392b;
     }
     
     /* Stock status colors */
@@ -610,13 +738,12 @@ if (isset($_GET['id'])) {
     <div class="product-header">
         <div class="header-content">
             <div class="product-logo">Product Store</div>
-            
+            <button type="button" class="add-product-btn" onclick="openAddModal()">+ Add Product</button>
             <div class="search-sort-container">
                 <form method="GET" action="Product.php" class="search-form">
                     <input type="text" name="search" class="search-input" placeholder="Search products..." value="<?php echo htmlspecialchars($search_query); ?>">
                     <button type="submit" class="search-button">Search</button>
                 </form>
-                
                 <select name="sort" class="sort-select" onchange="this.form.submit()" form="sortForm">
                     <option value="ProductName" <?php echo $sort_by === 'ProductName' ? 'selected' : ''; ?>>Sort A-Z</option>
                     <option value="Price" <?php echo $sort_by === 'Price' ? 'selected' : ''; ?>>Sort by Price (High to Low)</option>
@@ -639,8 +766,9 @@ if (isset($_GET['id'])) {
         <section class="product-section">
             <div class="product-container">
                 <div class="product-image">
-                    <img src="<?php echo htmlspecialchars($product['ImagePath']); ?>" alt="<?php echo htmlspecialchars($product['ProductName']); ?>">
-                </div>
+                    <img src="/Assets/Image/Product/<?php echo htmlspecialchars($product['ImagePath']); ?>" 
+                    alt="<?php echo htmlspecialchars($product['ProductName']); ?>"
+                    onerror="this.onerror=null; this.src='../../Assets/Image/Product/default-product.png';">                </div>
                 <div class="product-details">
                     <h1 class="product-title"><?php echo htmlspecialchars($product['ProductName']); ?></h1>
                     <div class="product-category"><?php echo htmlspecialchars($product['Category']); ?></div>
@@ -649,42 +777,11 @@ if (isset($_GET['id'])) {
                     </div>
                     <div class="product-price">$<?php echo number_format($product['Price'], 2); ?></div>
                     
-                    <!-- Stock Information -->
-                    <div class="stock-info">
-                        <div class="stock-status <?php 
-                            if ($product['Stock'] == 0) echo 'out-of-stock';
-                            elseif ($product['Stock'] <= $product['LowStockAlert']) echo 'low-stock';
-                            else echo 'in-stock';
-                        ?>">
-                            <?php
-                            if ($product['Stock'] == 0) {
-                                echo 'Out of Stock';
-                            } elseif ($product['Stock'] <= $product['LowStockAlert']) {
-                                echo 'Low Stock - Only ' . $product['Stock'] . ' left';
-                            } else {
-                                echo 'In Stock - ' . $product['Stock'] . ' available';
-                            }
-                            ?>
-                        </div>
-                    </div>
-                    
+                   
                     <p class="product-description"><?php echo nl2br(htmlspecialchars($product['Description'])); ?></p>
-                    
-                    <div class="quantity-selector">
-                        <div class="option-title">Quantity:</div>
-                        <button class="quantity-btn">-</button>
-                        <input type="text" class="quantity-input" value="1" max="<?php echo $product['Stock']; ?>">
-                        <button class="quantity-btn">+</button>
-                    </div>
-                    
-                    <button id="add-to-cart-btn" class="add-to-cart" data-product-id="<?php echo htmlspecialchars($product['ProductID']); ?>" <?php echo $product['Stock'] == 0 ? 'disabled' : ''; ?>>
-                        <?php echo $product['Stock'] == 0 ? 'Out of Stock' : 'Add to Cart'; ?>
-                    </button>
-                    <button id="wishlist-btn" class="wishlist-btn" data-product-id="<?php echo htmlspecialchars($product['ProductID']); ?>">Add to Wishlist</button>
                 </div>
             </div>
         </section>
-        
     <?php elseif ($view_mode === 'all' && !empty($products)): ?>
         <!-- All Products View -->
         <section class="products-section">
@@ -700,8 +797,9 @@ if (isset($_GET['id'])) {
                 <?php foreach ($products as $product): ?>
                     <div class="product-card">
                         <div class="product-card-image">
-                            <img src="<?php echo htmlspecialchars($product['ImagePath']); ?>" alt="<?php echo htmlspecialchars($product['ProductName']); ?>">
-                        </div>
+                            <img src="/Assets/Image/Product/<?php echo htmlspecialchars($product['ImagePath']); ?>" 
+                            alt="<?php echo htmlspecialchars($product['ProductName']); ?>"
+                            onerror="this.onerror=null; this.src='../../Assets/Image/Product/default-product.png';">                        </div>
                         <div class="product-card-details">
                             <h3 class="product-card-title"><?php echo htmlspecialchars($product['ProductName']); ?></h3>
                             <div class="product-card-category"><?php echo htmlspecialchars($product['Category']); ?></div>
@@ -723,7 +821,7 @@ if (isset($_GET['id'])) {
                                 ?>
                             </div>
                             <div class="product-card-actions">
-                                <a href="Product.php?id=<?php echo urlencode($product['ProductID']); ?>" class="view-btn">View Details</a>
+                                <button type="button" class="edit-btn" onclick="openEditModal('<?php echo htmlspecialchars($product['ProductID']); ?>', '<?php echo htmlspecialchars(addslashes($product['ProductName'])); ?>', '<?php echo htmlspecialchars(addslashes($product['Category'])); ?>', '<?php echo htmlspecialchars(addslashes($product['Description'])); ?>', <?php echo $product['Price']; ?>, <?php echo $product['Stock']; ?>, <?php echo $product['LowStockAlert']; ?>, '<?php echo htmlspecialchars($product['SupplierID'] ?? ''); ?>', '<?php echo htmlspecialchars($product['ImagePath'] ?? ''); ?>')">Edit</button>
                             </div>
                         </div>
                     </div>
@@ -737,80 +835,348 @@ if (isset($_GET['id'])) {
     <?php endif; ?>
 </div>
 
+
+
+<!-- Add Product Modal -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add Product</h2>
+            <button class="close-btn" onclick="closeAddModal()">&times;</button>
+        </div>
+        <div id="addFormError" style="display:none;color:#c0392b;margin-bottom:12px;"></div>
+        <form id="addForm" method="POST" action="product-add.php">
+            <div class="form-group">
+                <label>Product Name</label>
+                <input type="text" id="addProductName" name="product_name" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Category</label>
+                <input type="text" id="addCategory" name="category">
+            </div>
+            
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="addDescription" name="description"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Price</label>
+                <input type="number" id="addPrice" name="price" step="0.01" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Stock</label>
+                <input type="number" id="addStock" name="stock" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Low Stock Alert</label>
+                <input type="number" id="addLowStockAlert" name="low_stock_alert" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Product Image (optional)</label>
+                <input type="file" id="addProductImage" name="product_image" accept="image/*">
+                <small style="color:#666;">Supported formats: JPG, PNG, GIF. Max size: 5MB</small>
+                <div id="addImagePreview" style="margin-top:10px;display:none;">
+                    <img id="addImagePreviewImg" style="max-width:150px;max-height:150px;border:1px solid #ddd;border-radius:4px;">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Supplier</label>
+                <select id="addSupplier" name="supplier_id" required>
+                    <option value="">-- Select Supplier --</option>
+                    <?php
+                    // Fetch suppliers from database
+                    $supplier_sql = "SELECT SupplierID, SupplierName FROM suppliers WHERE IsActive = 'Active' ORDER BY SupplierName";
+                    $supplier_result = $conn->query($supplier_sql);
+                    if ($supplier_result && $supplier_result->num_rows > 0) {
+                        while ($row = $supplier_result->fetch_assoc()) {
+                            echo '<option value="' . htmlspecialchars($row['SupplierID']) . '">' . htmlspecialchars($row['SupplierName']) . '</option>';
+                        }
+                    }
+                    ?>
+                </select>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn-save">Create Product</button>
+                <button type="button" class="btn-cancel" onclick="closeAddModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Product Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit Product</h2>
+            <button class="close-btn" onclick="closeEditModal()">&times;</button>
+        </div>
+        <form id="editForm" method="POST" action="product-edit.php">
+            <input type="hidden" id="editProductId" name="product_id">
+            
+            <div class="form-group">
+                <label>Product Name</label>
+                <input type="text" id="editProductName" name="product_name" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Category</label>
+                <input type="text" id="editCategory" name="category">
+            </div>
+            
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="editDescription" name="description"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Price</label>
+                <input type="number" id="editPrice" name="price" step="0.01" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Stock</label>
+                <input type="number" id="editStock" name="stock" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Low Stock Alert</label>
+                <input type="number" id="editLowStockAlert" name="low_stock_alert" required>
+            </div>
+
+            <div class="form-group">
+                <label>Product Image (optional)</label>
+                <input type="file" id="editProductImage" name="product_image" accept="image/*">
+                <small style="color:#666;">Supported formats: JPG, PNG, GIF. Max size: 5MB</small>
+                <div id="editImagePreview" style="margin-top:10px;">
+                    <img id="editImagePreviewImg" style="max-width:150px;max-height:150px;border:1px solid #ddd;border-radius:4px;">
+                </div>
+                <small style="color:#999;margin-top:5px;display:block;">Leave blank to keep current image</small>
+            </div>
+
+            <div class="form-group">
+                <label>Supplier</label>
+                <select id="editSupplier" name="supplier_id" required>
+                    <option value="">-- Select Supplier --</option>
+                    <?php
+                    $supplier_sql = "SELECT SupplierID, SupplierName FROM suppliers WHERE IsActive = 'Active' ORDER BY SupplierName";
+                    $supplier_result = $conn->query($supplier_sql);
+                    if ($supplier_result && $supplier_result->num_rows > 0) {
+                        while ($row = $supplier_result->fetch_assoc()) {
+                            echo '<option value="' . htmlspecialchars($row['SupplierID']) . '">' . htmlspecialchars($row['SupplierName']) . '</option>';
+                        }
+                    }
+                    ?>
+                </select>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn-save">Save Changes</button>
+                <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+                <button type="button" class="btn-delete" onclick="deleteProduct(document.getElementById('editProductId').value)" style="background-color:#e74c3c;margin-left:auto;color:white">Delete Product</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
-// Cart & wishlist UI helpers (works standalone or inside dashboard)
-async function refreshCartCount() {
-    try {
-        const r = await fetch('/View/Auth/cart.php');
-        const j = await r.json();
-        const el = document.querySelector('.cart-count');
-        if (el) el.textContent = j.total || 0;
-    } catch (e) { console.warn('cart refresh', e); }
-}
-
-async function refreshWishlistCount() {
-    try {
-        const r = await fetch('/View/Auth/wishlist.php');
-        const j = await r.json();
-        const el = document.querySelector('.wishlist-count');
-        if (el) el.textContent = j.total || 0;
-    } catch (e) { console.warn('wishlist refresh', e); }
-}
-
-// attach event listeners for add-to-cart and wishlist
-(function(){
-    // single product handlers
-    const addBtn = document.getElementById('add-to-cart-btn');
-    if (addBtn) addBtn.addEventListener('click', async function(){
-        const id = this.dataset.productId;
-        const qtyEl = document.querySelector('.quantity-input');
-        const qty = qtyEl ? Math.max(1, parseInt(qtyEl.value||1)) : 1;
-        try {
-            await fetch('/View/Auth/cart.php?action=add&id=' + encodeURIComponent(id) + '&qty=' + encodeURIComponent(qty), { method:'POST' });
-            await refreshCartCount();
-            alert('Added to cart');
-        } catch(e) { console.error(e); alert('Failed adding to cart'); }
-    });
-
-    const wishBtn = document.getElementById('wishlist-btn');
-    if (wishBtn) wishBtn.addEventListener('click', async function(){
-        const id = this.dataset.productId;
-        try {
-            const r = await fetch('/View/Auth/wishlist.php?action=toggle&id=' + encodeURIComponent(id), { method:'POST' });
-            const j = await r.json();
-            if (j.ok) {
-                this.textContent = (j.action === 'added') ? 'Wishlisted' : 'Add to Wishlist';
-                await refreshWishlistCount();
-            }
-        } catch(e) { console.error(e); alert('Failed wishlist'); }
-    });
-
-    // Quantity selector functionality
-    const quantityInput = document.querySelector('.quantity-input');
-    const minusBtn = document.querySelector('.quantity-btn:first-child');
-    const plusBtn = document.querySelector('.quantity-btn:last-child');
+function openEditModal(productId, productName, category, description, price, stock, lowStockAlert, supplierId, imagePath) {
+    document.getElementById('editProductId').value = productId;
+    document.getElementById('editProductName').value = productName;
+    document.getElementById('editCategory').value = category;
+    document.getElementById('editDescription').value = description;
+    document.getElementById('editPrice').value = price;
+    document.getElementById('editStock').value = stock;
+    document.getElementById('editLowStockAlert').value = lowStockAlert;
+    document.getElementById('editSupplier').value = supplierId || '';
     
-    if (minusBtn && plusBtn && quantityInput) {
-        minusBtn.addEventListener('click', () => {
-            let currentValue = parseInt(quantityInput.value);
-            if (currentValue > 1) {
-                quantityInput.value = currentValue - 1;
-            }
-        });
+    // Show current image if exists
+    const previewImg = document.getElementById('editImagePreviewImg');
+    const previewDiv = document.getElementById('editImagePreview');
+    if (imagePath && imagePath.trim()) {
+        previewImg.src = imagePath;
+        previewDiv.style.display = 'block';
+    } else {
+        previewDiv.style.display = 'none';
+    }
+    
+    document.getElementById('editProductImage').value = '';
+    document.getElementById('editModal').classList.add('show');
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').classList.remove('show');
+}
+
+function deleteProduct(productId) {
+    if (!productId) {
+        alert('Product ID not found');
+        return;
+    }
+    
+    if (confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+        const formData = new FormData();
+        formData.append('product_id', productId);
         
-        plusBtn.addEventListener('click', () => {
-            let currentValue = parseInt(quantityInput.value);
-            const maxStock = parseInt(quantityInput.getAttribute('max')) || 999;
-            if (currentValue < maxStock) {
-                quantityInput.value = currentValue + 1;
+        fetch('product-delete.php', { method: 'POST', body: formData })
+        .then(response => response.text().then(text => ({ ok: response.ok, status: response.status, statusText: response.statusText, text })))
+        .then(resp => {
+            const raw = resp.text;
+            // Try to parse JSON, but show raw server output if it's not JSON
+            try {
+                const data = JSON.parse(raw);
+                if (resp.ok && data.success) {
+                    alert('Product deleted successfully');
+                    closeEditModal();
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.message || ('HTTP ' + resp.status + ' ' + resp.statusText)));
+                }
+            } catch (e) {
+                console.error('Failed to parse JSON from server:', e);
+                // Show raw server response to help debugging
+                alert('Server response (not JSON). HTTP ' + resp.status + ' ' + resp.statusText + '\n\n' + raw.substring(0, 2000));
             }
+        })
+        .catch(error => { 
+            console.error('Fetch error:', error); 
+            alert('An error occurred while deleting the product: ' + error.message); 
         });
     }
+}
 
-    // initial counts
-    refreshCartCount();
-    refreshWishlistCount();
-})();
+function openAddModal() {
+    const form = document.getElementById('addForm');
+    if (form) form.reset();
+    const err = document.getElementById('addFormError');
+    if (err) { err.style.display = 'none'; err.textContent = ''; }
+    document.getElementById('addImagePreview').style.display = 'none';
+    document.getElementById('addModal').classList.add('show');
+}
+
+function closeAddModal() {
+    document.getElementById('addModal').classList.remove('show');
+}
+
+// Image preview for add form
+const addImageInput = document.getElementById('addProductImage');
+if (addImageInput) {
+    addImageInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const previewImg = document.getElementById('addImagePreviewImg');
+                const previewDiv = document.getElementById('addImagePreview');
+                previewImg.src = event.target.result;
+                previewDiv.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
+// Image preview for edit form
+const editImageInput = document.getElementById('editProductImage');
+if (editImageInput) {
+    editImageInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const previewImg = document.getElementById('editImagePreviewImg');
+                const previewDiv = document.getElementById('editImagePreview');
+                previewImg.src = event.target.result;
+                previewDiv.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
+// Close modals when clicking outside of them
+window.onclick = function(event) {
+    const editModal = document.getElementById('editModal');
+    const addModal = document.getElementById('addModal');
+    if (editModal && event.target == editModal) {
+        editModal.classList.remove('show');
+    }
+    if (addModal && event.target == addModal) {
+        addModal.classList.remove('show');
+    }
+}
+
+// Handle edit form submission
+const editFormEl = document.getElementById('editForm');
+if (editFormEl) {
+    editFormEl.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        fetch('product-edit.php', { method: 'POST', body: formData })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Product updated successfully');
+                location.reload();
+            } else {
+                alert('Error: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => { console.error('Error:', error); alert('An error occurred while saving changes'); });
+    });
+}
+
+// Handle add form submission
+const addFormEl = document.getElementById('addForm');
+if (addFormEl) {
+    addFormEl.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const errBox = document.getElementById('addFormError');
+        if (errBox) { errBox.style.display = 'none'; errBox.textContent = ''; }
+
+        const formData = new FormData(this);
+        // Basic client validation
+        const name = (formData.get('product_name') || '').toString().trim();
+        const price = parseFloat(formData.get('price'));
+        const stock = parseInt(formData.get('stock'));
+        if (!name) { if (errBox) { errBox.textContent = 'Product name is required'; errBox.style.display = 'block'; } return; }
+        if (isNaN(price) || price < 0) { if (errBox) { errBox.textContent = 'Price must be >= 0'; errBox.style.display = 'block'; } return; }
+        if (isNaN(stock) || stock < 0) { if (errBox) { errBox.textContent = 'Stock must be >= 0'; errBox.style.display = 'block'; } return; }
+
+        fetch('product-add.php', { method: 'POST', body: formData })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+            }
+            return response.text();
+        })
+        .then(text => {
+            console.log('Raw response:', text);
+            try {
+                const data = JSON.parse(text);
+                if (data.success) {
+                    alert('Product created successfully');
+                    location.reload();
+                } else {
+                    if (errBox) { errBox.textContent = data.message || 'Failed to create product'; errBox.style.display = 'block'; }
+                }
+            } catch (e) {
+                console.error('JSON parse error:', e);
+                if (errBox) { errBox.textContent = 'Invalid server response: ' + text.substring(0, 100); errBox.style.display = 'block'; }
+            }
+        })
+        .catch(err => { 
+            console.error('Fetch error:', err); 
+            if (errBox) { errBox.textContent = 'Network error: ' + err.message; errBox.style.display = 'block'; } 
+        });
+    });
+}
 </script>
 
 <?php
