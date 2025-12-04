@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Lora:ital,wght@0,400..700;1,400..700&family=Playfair:ital,opsz,wght@0,5..1200,300..900;1,5..1200,300..900&display=swap');
+
+:root {
+    /* === 配色板 === */
+    --brand-primary: #4BA3C3;       /* 2ENTRAL 蓝 */
+    --brand-dark: #1A2530;          /* 午夜深蓝 */
+    --brand-accent: #FF6B00;        /* 活力橙 */
+    --background-white: #FDFDFD;            /* 页面背景 */
+    --background-grey: #F4F7F9;             /* 表格隔行背景 */
+    --text-main: #2C3E50;
+    --text-light: #95A5A6;
+    
+    --font-heading: 'Kanit', sans-serif;
+    --font-body: 'Roboto', sans-serif;
+    
+    --radius-sm: 4px;
+    --shadow-hover: 0 10px 20px rgba(75, 163, 195, 0.25);
+}
+
+/* === 1. 运动风按钮 (Primary) === */
+.button-primary {
+    background: linear-gradient(135deg, var(--brand-primary) 0%, #2980B9 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 1rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* 按钮悬停效果：上浮 + 阴影增强 */
+.button-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+/* 按钮点击效果 */
+.button-primary:active {
+    transform: translateY(0);
+}
+
+/* === 2. 强调按钮 (Accent - 如"Low Stock Alert") === */
+.button-accent {
+    background-color: var(--brand-accent);
+    color: white;
+    font-family: var(--font-heading);
+    border-radius: var(--radius-sm);
+    padding: 8px 16px;
+    font-weight: bold;
+    border: none;
+    clip-path: polygon(10% 0, 100% 0, 100% 100%, 0% 100%);
+    padding-left: 20px; 
+}
+
+/* === 3. 数据卡片 (Dashboard Card) === */
+.sport-card {
+    background: white;
+    border-left: 5px solid var(--brand-primary); /* 左侧加粗蓝线 */
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.sport-card h3 {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.sport-card .number {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    color: var(--brand-dark);
+    font-weight: 700;
+    font-style: italic;
+}
+
+/* === 4. 表格头部样式 === */
+.sport-table-header {
+    background-color: var(--brand-dark);
+    color: white;
+    font-family: var(--font-heading);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 15px;
+}
