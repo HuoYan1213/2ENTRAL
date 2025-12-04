@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2ENTRAL - Full Sports Loading</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,800;1,800&family=Roboto:wght@500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --brand-dark: #1A2530;
+            --brand-blue: #4BA3C3;
+            --bounce-speed: 0.8s;
+            /* 总时长 = 0.8s * 11个物品 = 8.8s */
+            --total-duration: 8.8s; 
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: radial-gradient(100% 100% at 50% 100%, #34495E 0%, #10151B 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            flex-direction: column;
+            overflow: hidden;
+            font-family: var(--font-heading);
+            margin: auto;
+        }
+
+        /* === 动画主容器 (负责上下弹跳) === */
+        .bounce-container {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            z-index: 2;
+            /* 持续不断的弹跳 */
+            animation: bounce-movement var(--bounce-speed) infinite cubic-bezier(0.28, 0.84, 0.42, 1);
+        }
+
+        /* === 通用物品样式 === */
+        .morph-item {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: absolute;
+            top: 0; left: 0;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: inset -3px -3px 8px rgba(0,0,0,0.3);
+            border: 2px solid rgba(0,0,0,0.1);
+            /* 核心：所有物品应用同一个显隐动画，通过 step(1) 实现瞬间切换 */
+            animation: cycle-visibility var(--total-duration) infinite steps(1);
+            opacity: 0; /* 默认隐藏 */
+            background: #fff; /* 默认背景 */
+        }
+
+        .morph-item svg { width: 44px; height: 44px; fill: #333; }
+
+        /* === 各个物品的特定样式与延迟 (Delays) === */
+
+        /* 1. 🏀 篮球 (Basketball) - 0s 延迟 */
+        .item-1 { background: #FF6B00; border-color: #E65100; animation-delay: 0s; }
+        .item-1 svg { fill: rgba(0,0,0,0.6); }
+
+        /* 2. 🏸 羽毛球 (Badminton) - 0.8s 延迟 */
+        .item-2 { background: #FFFFFF; border-color: #ddd; animation-delay: calc(var(--bounce-speed) * 1); }
+        
+        /* 3. ⚽ 足球 (Soccer) */
+        .item-3 { background: #FFFFFF; border-color: #ddd; animation-delay: calc(var(--bounce-speed) * 2); }
+        .item-3 svg { fill: #1A2530; }
+
+        /* 4. 🎾 网球 (Tennis) */
+        .item-4 { background: #CFFF04; border-color: #A0CC00; animation-delay: calc(var(--bounce-speed) * 3); }
+        .item-4 svg { fill: rgba(0,0,0,0.4); }
+
+        /* 5. ⛳ 高尔夫 (Golf) */
+        .item-5 { background: #F0F0F0; border-color: #ccc; animation-delay: calc(var(--bounce-speed) * 4); }
+        .item-5 svg { fill: #999; }
+
+        /* 6. 🏓 乒乓球拍 (Ping Pong) */
+        .item-6 { background: #E74C3C; border-color: #C0392B; animation-delay: calc(var(--bounce-speed) * 5); }
+        .item-6 svg { fill: #F5D76E; /* 木柄颜色 */ }
+
+        /* 7. 🏐 排球 (Volleyball) */
+        .item-7 { background: #FFFFFF; border-color: #ddd; animation-delay: calc(var(--bounce-speed) * 6); }
+        .item-7 svg { fill: var(--brand-blue); }
+
+        /* 8. ⚾ 棒球棒 (Baseball Bat) */
+        .item-8 { background: #D35400; border-color: #A04000; animation-delay: calc(var(--bounce-speed) * 7); }
+        .item-8 svg { fill: #F5B041; transform: rotate(-45deg); }
+
+        /* 9. 🏉 橄榄球 (Rugby) */
+        .item-9 { background: #8D6E63; border-color: #6D4C41; animation-delay: calc(var(--bounce-speed) * 8); }
+        .item-9 svg { fill: rgba(255,255,255,0.8); }
+
+        /* 10. 🎳 保龄球 (Bowling) */
+        .item-10 { background: #2C3E50; border-color: #1A2530; animation-delay: calc(var(--bounce-speed) * 9); }
+        .item-10 svg { fill: rgba(255,255,255,0.9); }
+
+        /* 11. 📦 箱子 (Box) */
+        .item-11 { background: var(--brand-blue); border-color: #3a8eb0; animation-delay: calc(var(--bounce-speed) * 10); }
+        .item-11 svg { fill: white; }
+
+
+        /* === 阴影与文字 === */
+        .shadow {
+            width: 60px; height: 10px; background: rgba(0,0,0,0.3); border-radius: 50%;
+            margin-top: 80px;
+            animation: shadow-scale var(--bounce-speed) infinite cubic-bezier(0.28, 0.84, 0.42, 1);
+        }
+
+        .text-area { text-align: center; margin-top: 40px; z-index: 5; }
+        .text-area h2 { font-family: 'Kanit', sans-serif; color: white; font-size: 1.6rem; font-weight: 800; letter-spacing: 2px; font-style: italic; }
+        .text-area p { color: var(--brand-blue); font-size: 0.9rem; margin-top: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }
+
+        .loading-dots::after {
+            content: ' .'; animation: dots 1.5s steps(5, end) infinite;
+        }
+        @keyframes dots { 0%, 20% { content: ' .'; } 40% { content: ' ..'; } 60% { content: ' ...'; } 80%, 100% { content: ''; }}
+
+        /* ====== 关键帧定义 ====== */
+
+        /* 1. 弹跳动作 */
+        @keyframes bounce-movement {
+            0% { transform: translateY(0) scale(1.1, 0.9); }
+            50% { transform: translateY(80px) scale(0.95, 1.05); }
+            100% { transform: translateY(0) scale(1.1, 0.9); }
+        }
+
+        /* 2. 显隐循环 (核心) */
+        /* 100% / 11 ≈ 9.09%。每个物品只在自己的 1/11 时间片段内显示 */
+        @keyframes cycle-visibility {
+            0% { opacity: 1; z-index: 10; }
+            9.09% { opacity: 0; z-index: 1; }
+            100% { opacity: 0; z-index: 1; }
+        }
+
+        /* 3. 阴影缩放 */
+        @keyframes shadow-scale {
+            0%, 100% { transform: scale(1); opacity: 0.4; }
+            50% { transform: scale(0.5); opacity: 0.1; }
+        }
+    </style>
+</head>
+<body>
+
+        
+        <div class="bounce-container">
+            
+            <div class="morph-item item-1"><svg viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM215.14,136H169.59a111.49,111.49,0,0,0,6.72-38.65,115,115,0,0,0-1.57-19,88.13,88.13,0,0,0,38.8-16.14A87.59,87.59,0,0,1,215.14,136ZM128,40a88,88,0,0,1,43.25,11.35,103.22,103.22,0,0,1-3.69,27,126.39,126.39,0,0,1-39.56,6.37,126.39,126.39,0,0,1-39.56-6.37,103.22,103.22,0,0,1-3.69-27A88,88,0,0,1,128,40Zm-87.14,80a87.59,87.59,0,0,1,1.6-62.2,88.13,88.13,0,0,0,38.8,16.14,115,115,0,0,0-1.57,19A111.49,111.49,0,0,0,86.41,120H40.86Z"></path></svg></div>
+
+            <div class="morph-item item-2"><svg viewBox="0 0 256 256"><path d="M221.66,120,136,34.34a8,8,0,0,0-11.32,0L102.34,56.69l-19-19A8,8,0,0,0,72,37.66l-1.39,9.75L60.83,37.63a8,8,0,0,0-11.31,11.31l9.78,9.78L49.54,60.11A8,8,0,0,0,49.66,72l19,19L46.34,113.37a8,8,0,0,0,0,11.32l30.63,30.62a24,24,0,0,0,33.94,0L142.63,123.6l22.35,22.35L54.63,256.34a8,8,0,0,0,11.31,11.32l110.4-110.35,22.35,22.35a8,8,0,0,0,11.32,0l22.34-22.34a8,8,0,0,0,0-11.32Z"></path></svg></div>
+
+            <div class="morph-item item-3"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="#000000" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm76.52,147.42H170.9l-9.26-12.76,12.63-36.78,15-4.89,26.24,20.13A87.38,87.38,0,0,1,204.52,171.42Zm-164-34.3L66.71,117l15,4.89,12.63,36.78L85.1,171.42H51.48A87.38,87.38,0,0,1,40.47,137.12Zm10-50.64,5.51,18.6L40.71,116.77A87.33,87.33,0,0,1,50.43,86.48ZM109,152,97.54,118.65,128,97.71l30.46,20.94L147,152Zm91.07-46.92,5.51-18.6a87.33,87.33,0,0,1,9.72,30.29Zm-6.2-35.38-9.51,32.08-15.07,4.89L136,83.79V68.21l29.09-20A88.58,88.58,0,0,1,193.86,69.7ZM146.07,41.87,128,54.29,109.93,41.87a88.24,88.24,0,0,1,36.14,0ZM90.91,48.21l29.09,20V83.79L86.72,106.67l-15.07-4.89L62.14,69.7A88.58,88.58,0,0,1,90.91,48.21ZM63.15,187.42H83.52l7.17,20.27A88.4,88.4,0,0,1,63.15,187.42ZM110,214.13,98.12,180.71,107.35,168h41.3l9.23,12.71-11.83,33.42a88,88,0,0,1-36.1,0Zm55.36-6.44,7.17-20.27h20.37A88.4,88.4,0,0,1,165.31,207.69Z"></path></svg></div>
+
+            <div class="morph-item item-4"><svg viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216ZM70.54,70.54A87.46,87.46,0,0,0,40,128a87.46,87.46,0,0,0,30.54,57.46A88,88,0,0,1,128,40,87.46,87.46,0,0,0,70.54,70.54ZM185.46,185.46A87.46,87.46,0,0,0,216,128a87.46,87.46,0,0,0-30.54-57.46A88,88,0,0,1,128,216,87.46,87.46,0,0,0,185.46,185.46Z"></path></svg></div>
+
+            <div class="morph-item item-5"><svg viewBox="0 0 256 256"><circle cx="128" cy="128" r="96" opacity="0.2"></circle><path d="M128,40a88,88,0,1,0,88,88A88.1,88.1,0,0,0,128,40Zm0,16a8,8,0,1,1-8,8A8,8,0,0,1,128,56Zm32,16a8,8,0,1,1-8,8A8,8,0,0,1,160,72ZM96,72a8,8,0,1,1-8,8A8,8,0,0,1,96,72Zm-32,48a8,8,0,1,1-8,8A8,8,0,0,1,64,120Zm128,0a8,8,0,1,1-8,8A8,8,0,0,1,192,120Zm-64,32a8,8,0,1,1-8,8A8,8,0,0,1,128,152Zm32,32a8,8,0,1,1-8,8A8,8,0,0,1,160,184Zm-64,0a8,8,0,1,1-8,8A8,8,0,0,1,96,184Z"></path></svg></div>
+
+            <div class="morph-item item-6"><svg viewBox="0 0 256 256"><path d="M169.07,146.43a88,88,0,1,0-124.5-124.5,88,88,0,0,0,124.5,124.5Zm-113.19-11.32a72,72,0,1,1,101.87,0A72,72,0,0,1,55.88,135.11ZM218.31,192,186.6,160.29,163.94,183l31.72,31.71a24,24,0,0,0,33.94-33.94Z"></path></svg></div>
+            
+            <div class="morph-item item-7"><svg viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a87.82,87.82,0,0,1-71.65-37.79A87.83,87.83,0,0,1,128,104a87.83,87.83,0,0,1,71.65,74.21A87.82,87.82,0,0,1,128,216ZM57.43,70.45A87.83,87.83,0,0,1,128,104,87.83,87.83,0,0,1,48.13,166.56,87.56,87.56,0,0,1,57.43,70.45ZM198.57,70.45A87.56,87.56,0,0,1,207.87,166.56,87.83,87.83,0,0,1,128,104,87.83,87.83,0,0,1,198.57,70.45Z"></path></svg></div>
+
+            <div class="morph-item item-8"><svg viewBox="0 0 256 256"><path d="M229.66,58.34l-32-32a8,8,0,0,0-11.32,0l-160,160a8,8,0,0,0,0,11.32l32,32a8,8,0,0,0,11.32,0l160-160A8,8,0,0,0,229.66,58.34ZM56,211.31,44.69,200,192,52.69,203.31,64Z"></path></svg></div>
+
+            <div class="morph-item item-9"><svg viewBox="0 0 256 256"><path d="M229.81,26.19a15.9,15.9,0,0,0-22.5,1.13l-52,54.83A150.82,150.82,0,0,0,45,193.15l-5.17,5.46a16,16,0,0,0,22.63,22.63l5.46-5.17A150.82,150.82,0,0,0,178.15,100.7l54.83-52A15.9,15.9,0,0,0,229.81,26.19ZM156.59,123.41,123.41,156.59a8.16,8.16,0,0,1-11.32,0,120.38,120.38,0,0,1-16-20l24.71-24.71a8,8,0,0,0-11.32-11.32L84.73,125.27a120.38,120.38,0,0,1-20-16,8,8,0,0,1,0-11.32l33.18-33.18A134.72,134.72,0,0,1,145.27,84.73L120.56,109.44a8,8,0,0,0,11.32,11.32l24.71-24.71A134.72,134.72,0,0,1,156.59,123.41Z"></path></svg></div>
+
+            <div class="morph-item item-10"><svg viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm40,64a12,12,0,1,1-12-12A12,12,0,0,1,168,88Zm-32,48a12,12,0,1,1,12-12A12,12,0,0,1,136,136Zm-8-48a12,12,0,1,1,12-12A12,12,0,0,1,128,88Z"></path></svg></div>
+
+            <div class="morph-item item-11"><svg viewBox="0 0 256 256"><path d="M223.68,66.15,135.68,18a15.88,15.88,0,0,0-15.36,0L32.32,66.15A8,8,0,0,0,28,73.2V182.8a8,8,0,0,0,4.32,7.05l88,48.15a15.88,15.88,0,0,0,15.36,0l88-48.15a8,8,0,0,0,4.32-7.05V73.2A8,8,0,0,0,223.68,66.15ZM128,32l80.34,44-29.77,16.3-80.35-44Zm.8,195.8V128.59L212,84.41v95.2Z"></path></svg></div>
+
+        </div>
+
+        <div class="shadow"></div>
+
+    </div>
+
+    <div class="text-area">
+        <h2>LOADING ALL SPORTS<span class="loading-dots"></span></h2>
+        <p>Preparing Your Full Inventory</p>
+    </div>
+
+</body>
+</html>

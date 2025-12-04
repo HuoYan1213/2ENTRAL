@@ -86,8 +86,7 @@ class PublicController {
             'avatar' => $row['ImagePath']
         ];
        
-        header("Location: /View/Auth/Splash.php");
+        header("Location: /View/Public/Loading.php");
         exit();
     }
 }
-?>

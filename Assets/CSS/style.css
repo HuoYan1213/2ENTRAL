@@ -9,6 +9,10 @@
     --background-grey: #F4F7F9;             /* 表格隔行背景 */
     --text-main: #2C3E50;
     --text-light: #95A5A6;
+
+    --success: #00C853;
+    --error: #D50000;
+    --warning: #FFAB00;
     
     --font-heading: 'Kanit', sans-serif;
     --font-body: 'Roboto', sans-serif;
