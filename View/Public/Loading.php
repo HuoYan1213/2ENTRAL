@@ -134,7 +134,7 @@ if (!isset($_SESSION['user'])) {
 
         /* 10. 🎳 保龄球 (Bowling) */
         .item-10 { 
-            background: #9E9E9E; 
+            background: linear-gradient(to bottom right, #9E9E9E, #000000); 
             border-color: #1A2530; 
             animation-delay: calc(1s * 9); 
         }

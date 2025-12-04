@@ -211,7 +211,7 @@ switch ($uri) {
 
     <section class="login-container">
         <div class="brand-section">
-            <div class="banckground-number">88</div>
+            <div class="background-number">88</div>
             <div class="brand-logo">
                 <img src="Assets/Icon/2ENTRAL-2.png">
             </div>
