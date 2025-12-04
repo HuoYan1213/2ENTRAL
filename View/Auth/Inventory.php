@@ -960,10 +960,15 @@ async function generatePDF() {
             styles: { fontSize: 10 }
         });
 
-    
-        const sigY = doc.lastAutoTable.finalY + 30;
+        
+        let signatureY = doc.lastAutoTable.finalY + 30; 
         const pageHeight = doc.internal.pageSize.height;
-        const signatureY = (sigY + 40 > pageHeight) ? sigY : Math.max(sigY, pageHeight - 40);
+
+
+        if (signatureY + 20 > pageHeight) {
+            doc.addPage();
+            signatureY = 40; 
+        }
 
         doc.setDrawColor(150);
         doc.setLineWidth(0.5);
