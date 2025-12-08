@@ -16,6 +16,23 @@ switch ($uri) {
         $controller->callback();
         exit();
 }
+
+if (isset($_GET['error']) && $_GET['error'] === 'account_inactive') {
+    echo '
+        <div style="
+            color: #A00000; 
+            font-weight: bold; 
+            padding: 10px; 
+            border: 1px solid #A00000; 
+            border-radius: 5px; 
+            background-color: #ffe0e0; 
+            text-align: center;
+            width: 90%; 
+            margin: 0 auto 15px;
+        ">
+            ⚠️ **Access Denied**: Your account is currently **Inactive**. Please contact the system administrator for assistance.
+        </div>';
+    }
 ?>  
 
 <!DOCTYPE html>
