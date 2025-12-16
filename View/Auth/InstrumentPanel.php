@@ -42,32 +42,32 @@ while ($row = mysqli_fetch_assoc($pieResult)) {
 }
 ?>
 
+<title>Dashboard</title>
 <style>
     .dashboard-wrapper {
-        padding: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
         font-family: 'Arial', sans-serif;
-    }
-
-    .dashboard-title {
-        font-size: 28px;
-        font-weight: 800;
-        margin-bottom: 30px;
-        color: #333;
-        border-bottom: 3px solid #3498db;
-        display: inline-block;
-        padding-bottom: 5px;
+        width: 100%;
+        height: 100%;
+        background: transparent;
+        box-sizing: border-box;
+        gap: 30px;
     }
 
     /* KPI Cards Row */
     .kpi-container {
         display: flex;
         gap: 20px;
-        margin-bottom: 30px;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .kpi-card {
         flex: 1;
-        background: white;
+        background: var(--card-white);
         padding: 20px;
         border-radius: 12px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
@@ -79,19 +79,20 @@ while ($row = mysqli_fetch_assoc($pieResult)) {
 
     .kpi-card.green { border-left-color: #2ecc71; }
 
-    .kpi-info h3 { margin: 0; font-size: 14px; color: #888; text-transform: uppercase; }
-    .kpi-info p { margin: 5px 0 0; font-size: 28px; font-weight: bold; color: #333; }
-    .kpi-icon { font-size: 32px; color: #ddd; }
+    .kpi-info h3 { margin: 0; font-size: 14px; color: var(--text-grey); text-transform: uppercase; }
+    .kpi-info p { margin: 5px 0 0; font-size: 28px; font-weight: bold; color: var(--text-dark); }
+    .kpi-icon { font-size: 32px; color: var(--border); }
 
     /* Charts Grid */
     .charts-container {
         display: grid;
         grid-template-columns: 2fr 1fr; 
         gap: 25px;
+        width: 100%;
     }
 
     .chart-card {
-        background: white;
+        background: var(--card-white);
         padding: 25px;
         border-radius: 12px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
@@ -105,7 +106,7 @@ while ($row = mysqli_fetch_assoc($pieResult)) {
         margin-bottom: 20px;
         font-size: 18px;
         font-weight: 700;
-        color: #444;
+        color: var(--text-dark);
     }
     
     /* Force canvas size */
@@ -122,8 +123,6 @@ while ($row = mysqli_fetch_assoc($pieResult)) {
 </style>
 
 <div class="dashboard-wrapper">
-    <div class="dashboard-title">Dashboard Overview</div>
-
     <div class="kpi-container">
         <div class="kpi-card">
             <div class="kpi-info">
@@ -163,6 +162,10 @@ while ($row = mysqli_fetch_assoc($pieResult)) {
 <script>
     // We wrap code in a small timeout to ensure DOM is fully ready
     setTimeout(function() {
+        // Check for Dark Mode to adjust chart text color
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        const textColor = isDarkMode ? '#E0E0E0' : '#666666';
+        const gridColor = isDarkMode ? '#333333' : '#e5e5e5';
         
         // --- 1. BAR CHART ---
         const barCanvas = document.getElementById('barChart');
@@ -185,8 +188,17 @@ while ($row = mysqli_fetch_assoc($pieResult)) {
                     maintainAspectRatio: false, // Fits to container
                     scales: {
                         y: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            ticks: { color: textColor },
+                            grid: { color: gridColor }
+                        },
+                        x: {
+                            ticks: { color: textColor },
+                            grid: { display: false }
                         }
+                    },
+                    plugins: {
+                        legend: { labels: { color: textColor } }
                     }
                 }
             });
@@ -211,7 +223,7 @@ while ($row = mysqli_fetch_assoc($pieResult)) {
                     responsive: true,
                     maintainAspectRatio: false, // Fits to container
                     plugins: {
-                        legend: { position: 'bottom' }
+                        legend: { position: 'bottom', labels: { color: textColor } }
                     }
                 }
             });

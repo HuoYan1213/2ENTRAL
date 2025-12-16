@@ -77,6 +77,11 @@ class PublicController {
 
         $row = $result->fetch_assoc();
 
+        if ($row['IsActive'] === 'Inactive') {
+            header("Location: /View/Public/AccessDenied.php");
+            exit();
+        }
+
         session_start();
         $_SESSION['user'] = [
             'id' => $row['UserID'],

@@ -138,6 +138,15 @@ $update_stmt->bind_param(
 );
 
 if ($update_stmt->execute()) {
+    // Log update
+    $logDetails = "Updated Product: " . $product_name;
+    $logStmt = $conn->prepare("INSERT INTO inventory_logs (LogsDetails, ProductID, UserID) VALUES (?, ?, ?)");
+    if ($logStmt) {
+        $logStmt->bind_param("ssi", $logDetails, $product_id, $user_id);
+        $logStmt->execute();
+        $logStmt->close();
+    }
+
     echo json_encode(['success' => true, 'message' => 'Product updated successfully']);
 } else {
     echo json_encode(['success' => false, 'message' => 'Failed to update product: ' . $update_stmt->error]);

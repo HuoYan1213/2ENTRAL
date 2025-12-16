@@ -10,7 +10,7 @@ class LogsController {
     }
 
     public function auditLogs($page = 1, $filters = []) {
-        $DATA_LIMIT = 10;
+        $DATA_LIMIT = 5;
         $offset = ($page - 1) * $DATA_LIMIT;
 
         $where_stmt = "WHERE 1=1";
@@ -67,18 +67,6 @@ class LogsController {
         return $users;
     }
 
-    public function getAction($details) {
-        $d = strtolower($details);
-        
-        if (strpos($d, 'login') !== false)  return 'badge-login';
-        if (strpos($d, 'logout') !== false) return 'badge-logout';
-        if (strpos($d, 'create') !== false) return 'badge-create';
-        if (strpos($d, 'update') !== false) return 'badge-update';
-        if (strpos($d, 'delete') !== false) return 'badge-delete';
-        
-        return 'badge-default';
-    }
-
     public function exportLogs($filters = []) {
         $where_stmt = "WHERE 1=1";
 
@@ -88,20 +76,21 @@ class LogsController {
         }
         if (!empty($filters['action'])) {
             $action = $this->conn->real_escape_string($filters['action']);
-            $where_stmt .= " AND inventory_logs.UserID = 'action'";
+            $where_stmt .= " AND inventory_logs.LogsDetails LIKE '%$action%'";
         }
         if (!empty($filters['start'])) {
             $start_date = $this->conn->real_escape_string($filters['start']);
-            $where_stmt .= " AND inventory_logs.UserID = '$start_date 00:00:00'";
+            $where_stmt .= " AND inventory_logs.CreatedAt >= '$start_date 00:00:00'";
         }
         if (!empty($filters['end'])) {
             $end_date = $this->conn->real_escape_string($filters['end']);
-            $where_stmt .= " AND inventory_logs.UserID = '$end_date 23:59:59'";
+            $where_stmt .= " AND inventory_logs.CreatedAt <= '$end_date 23:59:59'";
         }
 
         $stmt = "SELECT inventory_logs.CreatedAt, users.UserName, inventory_logs.LogsDetails
                  FROM inventory_logs
                  LEFT JOIN users ON inventory_logs.UserID = users.UserID
+                 $where_stmt
                  ORDER BY inventory_logs.CreatedAt DESC";
         
         $result = $this->conn->query($stmt);

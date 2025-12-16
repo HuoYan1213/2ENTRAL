@@ -23,6 +23,23 @@ class UserController {
             session_start();
         }
 
+        // Log logout action
+        if (isset($_SESSION['user']['id'])) {
+            require __DIR__ . "/../Model/DB.php";
+            if (!isset($conn)) global $conn;
+
+            $userID = $_SESSION['user']['id'];
+            $logDetails = "User Logout";
+            $defaultProductID = '2025DEF000'; // Use default ID for system logs
+
+            $stmt = $conn->prepare("INSERT INTO inventory_logs (LogsDetails, ProductID, UserID) VALUES (?, ?, ?)");
+            if ($stmt) {
+                $stmt->bind_param("ssi", $logDetails, $defaultProductID, $userID);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }
+
         session_unset();
         session_destroy();
 
@@ -46,6 +63,62 @@ class UserController {
         }
 
         return $users;
+    }
+
+    public function getUsersPaginated($page = 1, $limit = 5, $filters = []) {
+        require __DIR__ . "/../Model/DB.php";
+        if (!isset($conn)) global $conn;
+
+        $offset = ($page - 1) * $limit;
+        $where = "WHERE 1=1";
+        $params = [];
+        $types = "";
+
+        if (!empty($filters['search'])) {
+            $where .= " AND (UserName LIKE ? OR Email LIKE ? OR Role LIKE ?)";
+            $term = "%" . $filters['search'] . "%";
+            $params[] = $term; $params[] = $term; $params[] = $term;
+            $types .= "sss";
+        }
+        if (!empty($filters['role'])) {
+            $where .= " AND Role = ?";
+            $params[] = $filters['role'];
+            $types .= "s";
+        }
+        if (!empty($filters['status'])) {
+            $where .= " AND IsActive = ?";
+            $params[] = $filters['status'];
+            $types .= "s";
+        }
+
+        // Count total records
+        $countQuery = "SELECT COUNT(*) as total FROM users $where";
+        $stmt = $conn->prepare($countQuery);
+        if(!empty($params)) $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $total = $stmt->get_result()->fetch_assoc()['total'];
+        $stmt->close();
+
+        $totalPages = ceil($total / $limit);
+
+        // Fetch paginated data
+        $query = "SELECT UserID, UserName, Email, CreatedAt, Role, ImagePath, IsActive FROM users $where ORDER BY UserID ASC LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+        $types .= "ii";
+
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $users = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        return [
+            'users' => $users,
+            'total_pages' => $totalPages,
+            'current_page' => $page,
+            'total_records' => $total
+        ];
     }
 
     public function getUser($userID = null) {
@@ -190,8 +263,8 @@ class UserController {
         $isTargetManager = $targetUser['Role'] === 'Manager';
         $isEditingSelf = $userID == $currentLoggedInUserID;
         
-        if ($isTargetManager && !$isEditingSelf) {
-            echo json_encode(['success' => false, 'message' => 'Permission denied: Cannot modify another Manager\'s account.']);
+        if ($isTargetManager) {
+            echo json_encode(['success' => false, 'message' => 'Permission Denied: Manager accounts cannot be modified from this panel.']);
             exit();
         }
         
@@ -503,7 +576,6 @@ class UserController {
         $uploadPath = NULL; 
         $hasUpload = false;
         
-        // FIX: 修正路径并添加文件夹检查
         $uploadDir = __DIR__ . "/../Assets/Image/User/";
         if (!file_exists($uploadDir)) {
             mkdir($uploadDir, 0777, true);
@@ -627,7 +699,6 @@ class UserController {
 
         $imagePath = $currentImagePath;
         
-        // FIX: 修正路径及语法错误
         $uploadDir = __DIR__ . "/../Assets/Image/User/";
         if (!file_exists($uploadDir)) {
             mkdir($uploadDir, 0777, true);

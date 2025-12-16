@@ -2,7 +2,7 @@
 // Database configuration (Please adjust these settings as needed)
 $HOST = "127.0.0.1";
 $USER = "root";
-$PASSWORD = "11908721";
+$PASSWORD = "TKS12345678";
 $DBNAME = "2entral";
 
 // Create connection

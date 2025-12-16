@@ -48,25 +48,30 @@ try {
     
     if (!$stmtOrder->execute()) throw new Exception("Order Insert Failed");
 
-    // C. Insert Details & Update Stock
+    // C. Insert Details, Update Stock, and Log
     $stmtDetail = $conn->prepare("INSERT INTO purchase_details (Quantity, Subtotal, CreatedAt, IsActive, ProductID, PurchaseID) VALUES (?, ?, NOW(), 'Active', ?, ?)");
-    
-    // RESTOCK LOGIC: Update products SET Stock = Stock + Qty
     $stmtStock = $conn->prepare("UPDATE products SET Stock = Stock + ? WHERE ProductID = ?");
+    $stmtLog = $conn->prepare("INSERT INTO inventory_logs (LogsDetails, ProductID, UserID) VALUES (?, ?, ?)");
 
     foreach ($cart as $item) {
         $qty = $item['qty'];
         $price = $item['price'];
         $subtotal = $qty * $price;
         $prodID = $item['id'];
+        $prodName = $item['name']; // Get product name from cart
 
         // Insert Detail
         $stmtDetail->bind_param("idss", $qty, $subtotal, $prodID, $newID);
-        if (!$stmtDetail->execute()) throw new Exception("Detail Insert Failed");
+        if (!$stmtDetail->execute()) throw new Exception("Detail Insert Failed for ProductID: $prodID");
 
         // Update Stock
         $stmtStock->bind_param("is", $qty, $prodID);
-        if (!$stmtStock->execute()) throw new Exception("Stock Update Failed");
+        if (!$stmtStock->execute()) throw new Exception("Stock Update Failed for ProductID: $prodID");
+
+        // Log the stock update
+        $logDetails = "Purchase Order #$newID: Added $qty units of '$prodName'.";
+        $stmtLog->bind_param("ssi", $logDetails, $prodID, $userID);
+        if (!$stmtLog->execute()) throw new Exception("Inventory Log Failed for ProductID: $prodID");
     }
 
     // D. Commit

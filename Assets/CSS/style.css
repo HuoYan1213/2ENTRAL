@@ -1,12 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Lora:ital,wght@0,400..700;1,400..700&family=Playfair:ital,opsz,wght@0,5..1200,300..900;1,5..1200,300..900&display=swap');
 
 :root {
-    /* === 配色板 === */
-    --brand-primary: #4BA3C3;       /* 2ENTRAL 蓝 */
-    --brand-dark: #1A2530;          /* 午夜深蓝 */
-    --brand-accent: #FF6B00;        /* 活力橙 */
-    --background-white: #FDFDFD;            /* 页面背景 */
-    --background-grey: #F4F7F9;             /* 表格隔行背景 */
+    --brand-primary: #4BA3C3;     
+    --brand-dark: #1A2530;   
+    --brand-accent: #FF6B00; 
+    --background-white: #FDFDFD;
+    --background-grey: #F4F7F9;
     --text-main: #2C3E50;
     --text-light: #95A5A6;
 
@@ -21,81 +20,130 @@
     --shadow-hover: 0 10px 20px rgba(75, 163, 195, 0.25);
 }
 
-/* === 1. 运动风按钮 (Primary) === */
-.button-primary {
-    background: linear-gradient(135deg, var(--brand-primary) 0%, #2980B9 100%);
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    font-family: var(--font-heading);
-    font-weight: 600;
-    font-size: 1rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+.toast-container {
+    position: fixed; top: 24px; right: 24px;
+    display: flex; flex-direction: column; gap: 12px;
+    z-index: 9999;
+}
+
+.toast {
+    background: white;
+    min-width: 300px;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    display: flex; 
+    align-items: center; 
+    gap: 12px;
     position: relative;
     overflow: hidden;
+    animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    border-left: 4px solid transparent;
 }
 
-/* 按钮悬停效果：上浮 + 阴影增强 */
-.button-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
+.toast.hiding {
+    animation: fadeOutRight 0.4s forwards;
 }
 
-/* 按钮点击效果 */
-.button-primary:active {
-    transform: translateY(0);
+.toast-icon {
+    width: 32px; 
+    height: 32px; 
+    border-radius: 50%;
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    flex-shrink: 0; 
+    font-size: 18px;
 }
 
-/* === 2. 强调按钮 (Accent - 如"Low Stock Alert") === */
-.button-accent {
-    background-color: var(--brand-accent);
-    color: white;
-    font-family: var(--font-heading);
-    border-radius: var(--radius-sm);
-    padding: 8px 16px;
-    font-weight: bold;
-    border: none;
-    clip-path: polygon(10% 0, 100% 0, 100% 100%, 0% 100%);
-    padding-left: 20px; 
+.toast-content h4 { 
+    margin: 0; 
+    font-family: 'Kanit'; 
+    font-size: 0.95rem; 
+    color: var(--text-dark); 
 }
 
-/* === 3. 数据卡片 (Dashboard Card) === */
-.sport-card {
-    background: white;
-    border-left: 5px solid var(--brand-primary); /* 左侧加粗蓝线 */
-    padding: 20px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+.toast-content p { 
+    margin: 2px 0 0; 
+    font-size: 0.8rem; 
+    color: var(--text-grey); 
 }
 
-.sport-card h3 {
-    color: var(--text-light);
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    margin-bottom: 5px;
+.toast-close {
+    margin-left: auto; color: #999; cursor: pointer; font-size: 18px;
 }
 
-.sport-card .number {
-    font-family: var(--font-heading);
-    font-size: 2.5rem;
-    color: var(--brand-dark);
-    font-weight: 700;
-    font-style: italic;
+.toast-close:hover { 
+    color: #333; 
 }
 
-/* === 4. 表格头部样式 === */
-.sport-table-header {
-    background-color: var(--brand-dark);
-    color: white;
-    font-family: var(--font-heading);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    padding: 15px;
+.toast-success { 
+    border-left-color: #66bb6a; 
 }
+
+.toast-success .toast-icon { 
+    background: rgba(102, 187, 106, 0.15); 
+    color: #2e7d32; 
+}
+
+.toast-error { 
+    border-left-color: #ef5350; 
+}
+
+.toast-error .toast-icon { 
+    background: rgba(239, 83, 80, 0.15); 
+    color: #c62828; 
+}
+
+@keyframes slideInRight { 
+    from { opacity: 0; transform: translateX(50px); } 
+    to { opacity: 1; transform: translateX(0); } 
+}
+
+@keyframes fadeOutRight { 
+    to { opacity: 0; transform: translateX(50px); } 
+}
+
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    display: flex; justify-content: center; align-items: center;
+    opacity: 0; visibility: hidden;
+    transition: all 0.3s;
+}
+
+.modal-overlay.active { opacity: 1; visibility: visible; }
+
+.modal-box {
+    background: var(--card-white);
+    width: 90%; max-width: 400px;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    padding: 32px;
+    text-align: center;
+    transform: scale(0.9); opacity: 0;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.modal-overlay.active .modal-box { transform: scale(1); opacity: 1; }
+
+.modal-icon-large {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: rgba(2, 136, 209, 0.1); color: #0288d1;
+    font-size: 32px;
+    display: flex; justify-content: center; align-items: center;
+    margin: 0 auto 20px;
+}
+.modal-title { font-family: 'Kanit'; font-size: 1.5rem; margin-bottom: 8px; color: var(--text-dark); }
+.modal-desc { font-size: 0.9rem; color: var(--text-grey); margin-bottom: 32px; line-height: 1.5; }
+
+.modal-actions { display: flex; gap: 12px; }
+.modal-btn { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-family: 'Inter'; }
+
+.btn-confirm { background: var(--grad-blue); color: white; }
+.btn-confirm:hover { box-shadow: 0 4px 12px rgba(2, 136, 209, 0.3); }
+
+.btn-cancel { background: var(--bg-light); border: 1px solid var(--border); color: var(--text-grey); }
+.btn-cancel:hover { background: var(--border); color: var(--text-dark); }

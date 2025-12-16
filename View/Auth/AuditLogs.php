@@ -17,234 +17,350 @@
         'end' => $end_date  = $_GET['end'] ?? ''
     ];
 
-    if (isset($_GET['export']) && $_GET['export'] == 'true') {
+    if (isset($_GET['export_pdf']) && $_GET['export_pdf'] == 'true') {
+        header('Content-Type: application/json');
         $export_data = $controller->exportLogs($filters);
-        ob_end_clean();
-
-        if (ob_get_length()) ob_end_clean();
-
-        $file_name = "System_Logs_" . date('Y-m-d_H-i-s') . ".csv";
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . $file_name . '"');
-
-        $output = fopen('php://output', 'w');
-        fputcsv($output, ['Timestamp', 'Performed By', 'Action'], ",", "\"", "\\");
-
-        foreach ($export_data as $data) {
-            fputcsv($output, [
-                $data['CreatedAt'],
-                $data['UserName'] ?? 'Unknown User',
-                $data['LogsDetails']
-            ], ",", "\"", "\\");
-        }
-
-        fclose($output);
+        echo json_encode($export_data);
         exit();
     }
 
     $result_data = $controller->auditLogs($page, $filters);
     $get_user = $controller->getUsers();
 
-
     $logs = $result_data['LOGS'];
     $total_pages = $result_data['TOTAL_PAGES'];
     $current_page = $result_data['CURRENT_PAGE'];
     
-    // Filter Data Keeper
     function buildUrl($newPage, $currentFilters) {
         $params = array_merge($currentFilters, ['page' => $newPage]);
         return '?' . http_build_query(array_filter($params)); 
     }
+
+    // Helper to generate initials and color
+    function getUserVisuals($name) {
+        $initials = strtoupper(substr($name, 0, 1));
+        if (strpos($name, ' ') !== false) {
+            $parts = explode(' ', $name);
+            if (count($parts) > 1) {
+                $initials = strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1));
+            }
+        }
+        
+        // Simple hash for color
+        $colors = [
+            ['bg' => '#E3F2FD', 'text' => '#1565C0'], // Blue
+            ['bg' => '#FFEBEE', 'text' => '#C62828'], // Red
+            ['bg' => '#E8F5E9', 'text' => '#2E7D32'], // Green
+            ['bg' => '#F3E5F5', 'text' => '#7B1FA2'], // Purple
+            ['bg' => '#FFF3E0', 'text' => '#EF6C00'], // Orange
+            ['bg' => '#E0F2F1', 'text' => '#00695C'], // Teal
+        ];
+        $index = crc32($name) % count($colors);
+        return ['initials' => $initials, 'style' => $colors[$index]];
+    }
+
+    // Helper to parse action type
+    function getActionType($details) {
+        if (stripos($details, 'Login') !== false) return ['type' => 'Login', 'class' => 'act-login', 'icon' => 'ph-sign-in'];
+        if (stripos($details, 'Logout') !== false) return ['type' => 'Logout', 'class' => 'act-logout', 'icon' => 'ph-sign-out'];
+        if (stripos($details, 'Create') !== false || stripos($details, 'Add') !== false) return ['type' => 'Created', 'class' => 'act-create', 'icon' => 'ph-plus-circle'];
+        if (stripos($details, 'Update') !== false || stripos($details, 'Edit') !== false) return ['type' => 'Updated', 'class' => 'act-update', 'icon' => 'ph-pencil-simple'];
+        if (stripos($details, 'Delete') !== false || stripos($details, 'Remove') !== false) return ['type' => 'Deleted', 'class' => 'act-delete', 'icon' => 'ph-trash'];
+        return ['type' => 'Info', 'class' => 'act-info', 'icon' => 'ph-info'];
+    }
 ?>
 
 <title>Audit Logs</title>
+<!-- Include Phosphor Icons for the new design -->
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
 <link rel="stylesheet" href="../../Assets/CSS/auditlogs.css">
 
-<div class="audit-logs">
-    <div class="section-top">
-        <div class="audit-log-section">
-            <h2>Audit Logs</h2>
-            <span>Review system activities and changes.</span>
-        </div>
-        <div class="export-wrapper">
-            <button class="export-button" id="export-button"><i class="fa-solid fa-file-export"></i>Export Logs</button>
-        </div>
+<div class="audit-logs-wrapper">
+    
+    <!-- Header Section -->
+    <div class="header-section">
+        <button class="btn-export" onclick="generateAuditPDF()">
+            <i class="ph-bold ph-file-pdf"></i> Export PDF
+        </button>
     </div>
-    <form method="GET" action="" class="audit-log-filter">
-        <div class="filter-item">
-            <label for="user-filter">User:</label>
-            <select id="user-filter" name="user">
-                <option value="">All Users</option>
-                <?php foreach ($get_user as $u): ?>
-                    <option value="<?php echo $u['UserID'] ?>"
-                        <?php if ($user == $u['UserID']) echo "selected"; ?>>
-                        <?php echo htmlspecialchars($u['UserName']); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <div class="filter-item">
-            <label for="action-filter">Action:</label>
-            <select id="action-filter" name="action">
-                <option value="">All Actions</option>
-                <optgroup label="System Authentication">
-                    <option value="Login" <?php echo (($action ?? '') == 'Login') ? 'selected' : ''; ?>>Login</option>
-                    <option value="Logout" <?php echo (($action ?? '') == 'Logout') ? 'selected' : ''; ?>>Logout</option>
-                </optgroup>
-                <optgroup label="Data Operations">
-                    <option value="Create" <?php echo (($action ?? '') == 'Create') ? 'selected' : ''; ?>>Create</option>
-                    <option value="Update" <?php echo (($action ?? '') == 'Update') ? 'selected' : ''; ?>>Update</option>
-                    <option value="Delete" <?php echo (($action ?? '') == 'Delete') ? 'selected' : ''; ?>>Delete</option>
-                </optgroup>
-            </select>
-        </div>
-        <div class="filter-item">
-            <label for="start-date-filter">From:</label>
-            <input type="date" id="start-date-filter" name="start" value="<?php echo htmlspecialchars($start_date); ?>">
-        </div>
-        <div class="filter-item">
-            <label for="end-date-filter">To:</label>
-            <input type="date" id="end-date-filter" name="end" value="<?php echo htmlspecialchars($end_date); ?>">
-        </div>
-        <div class="filter-item">
-            <button type="submit" id="apply-filters">Filter</button>
+
+    <!-- Filter Bar -->
+    <form method="GET" action="" class="filter-form">
+        <div class="filter-bar">
+            <div class="filter-group">
+                <i class="ph ph-user"></i>
+                <span class="filter-label">User:</span>
+                <select name="user" class="filter-input">
+                    <option value="">All Users</option>
+                    <?php foreach ($get_user as $u): ?>
+                        <option value="<?php echo $u['UserID'] ?>" <?php if ($user == $u['UserID']) echo "selected"; ?>>
+                            <?php echo htmlspecialchars($u['UserName']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <i class="ph ph-faders"></i>
+                <span class="filter-label">Action:</span>
+                <select name="action" class="filter-input">
+                    <option value="">All Actions</option>
+                    <option value="Login" <?php echo ($action == 'Login') ? 'selected' : ''; ?>>Login</option>
+                    <option value="Logout" <?php echo ($action == 'Logout') ? 'selected' : ''; ?>>Logout</option>
+                    <option value="Create" <?php echo ($action == 'Create') ? 'selected' : ''; ?>>Create</option>
+                    <option value="Update" <?php echo ($action == 'Update') ? 'selected' : ''; ?>>Update</option>
+                    <option value="Delete" <?php echo ($action == 'Delete') ? 'selected' : ''; ?>>Delete</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <i class="ph ph-calendar-blank"></i>
+                <span class="filter-label">From:</span>
+                <input type="date" name="start" class="filter-input" value="<?php echo htmlspecialchars($start_date); ?>">
+            </div>
+
+            <div class="filter-group">
+                <i class="ph ph-calendar-blank"></i>
+                <span class="filter-label">To:</span>
+                <input type="date" name="end" class="filter-input" value="<?php echo htmlspecialchars($end_date); ?>">
+            </div>
+
+            <button type="submit" class="btn-filter">Apply Filter</button>
         </div>
     </form>
 
-    <div class="audit-log-table-wrapper">
-        <table class="audit-log-table">
+    <!-- Logs Table Card -->
+    <div class="logs-card">
+        <table class="audit-table">
             <thead>
                 <tr>
-                    <th>Timestamp</th>
-                    <th>Performed By</th>
+                    <th>User</th>
                     <th>Action</th>
+                    <th>Activity Details</th>
+                    <th>Timestamp</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (!empty($logs)): ?>
-                    <?php foreach ($logs as $l): ?>
+                    <?php foreach ($logs as $l): 
+                        $userName = !empty($l['UserName']) ? $l['UserName'] : 'Unknown User';
+                        $visuals = getUserVisuals($userName);
+                        $actionInfo = getActionType($l['LogsDetails']);
+                    ?>
                         <tr>
                             <td>
-                                <?php echo date('d/m/Y H:i:s', strtotime($l['CreatedAt'])); ?>
+                                <div class="user-cell">
+                                    <div class="user-avatar" style="background:<?php echo $visuals['style']['bg']; ?>; color:<?php echo $visuals['style']['text']; ?>;">
+                                        <?php echo $visuals['initials']; ?>
+                                    </div>
+                                    <div class="user-info">
+                                        <div class="user-name"><?php echo htmlspecialchars($userName); ?></div>
+                                    </div>
+                                </div>
                             </td>
                             <td>
-                                <?php if (!empty($l['UserName'])) {
-                                    echo htmlspecialchars($l['UserName']);
-                                }
-                                else {
-                                    echo 'Unknown User';
-                                } ?>
+                                <span class="action-badge <?php echo $actionInfo['class']; ?>">
+                                    <i class="ph-bold <?php echo $actionInfo['icon']; ?>"></i> <?php echo $actionInfo['type']; ?>
+                                </span>
                             </td>
-                            <td id="action-data">
-                                <?php          
-                                    $badgeClass = $controller->getAction($l['LogsDetails']);                           
-                                    $actionLabel = 'Info';
-                                    if (stripos($l['LogsDetails'], 'Login') !== false) $actionLabel = 'Login';
-                                    elseif (stripos($l['LogsDetails'], 'Logout') !== false) $actionLabel = 'Logout';
-                                    elseif (stripos($l['LogsDetails'], 'Create') !== false) $actionLabel = 'Create';
-                                    elseif (stripos($l['LogsDetails'], 'Update') !== false) $actionLabel = 'Update';
-                                    elseif (stripos($l['LogsDetails'], 'Delete') !== false) $actionLabel = 'Delete';
-                                ?>
-                                
-                                <span class="badge <?php echo $badgeClass; ?>">
-                                    <?php echo $actionLabel; ?>
-                                </span>
-
-                                <span id="logs-details">
+                            <td>
+                                <div class="details-cell">
                                     <?php echo htmlspecialchars($l['LogsDetails']); ?>
-                                </span>
+                                </div>
+                            </td>
+                            <td class="time-cell">
+                                <?php echo date('M j, Y g:i A', strtotime($l['CreatedAt'])); ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td id="no-found" colspan="3">No Logs Found Matching Your Criteria...</td>
+                        <td colspan="4" class="empty-state">
+                            <i class="ph ph-magnifying-glass" style="font-size: 32px; margin-bottom: 10px;"></i>
+                            <p>No logs found matching your criteria.</p>
+                        </td>
                     </tr>
                 <?php endif; ?>
-            </tbody>    
+            </tbody>
         </table>
     </div>
+
+    <!-- Pagination -->
     <?php if ($total_pages > 1): ?>
-    <div class="pagination">
+    <div class="pagination-container">
         <?php if ($current_page > 1): ?>
-            <a href="<?php echo buildUrl(1, $filters); ?>" class="page-button" title="First Page">
-                <i class="fa-solid fa-angles-left"></i>
+            <a href="<?php echo buildUrl(1, $filters); ?>" class="page-btn" title="First Page">
+                <i class="ph-bold ph-caret-double-left"></i>
+            </a>
+            <a href="<?php echo buildUrl($current_page - 1, $filters); ?>" class="page-btn" title="Previous">
+                <i class="ph-bold ph-caret-left"></i>
             </a>
         <?php else: ?>
-            <span class="page-button disabled"><i class="fa-solid fa-angles-left"></i></span>
+            <span class="page-btn disabled"><i class="ph-bold ph-caret-double-left"></i></span>
+            <span class="page-btn disabled"><i class="ph-bold ph-caret-left"></i></span>
         <?php endif; ?>
 
-        <?php if ($current_page > 1): ?>
-            <a href="<?php echo buildUrl($current_page - 1, $filters); ?>" class="page-button">
-                <i class="fa-solid fa-chevron-left"></i>
-            </a>
-        <?php else: ?>
-            <span class="page-button disabled"><i class="fa-solid fa-chevron-left"></i></span>
-        <?php endif; ?>
-
-        <span id="page-number">
+        <span class="page-info">
             Page <?php echo $current_page; ?> of <?php echo $total_pages; ?>
         </span>
 
         <?php if ($current_page < $total_pages): ?>
-            <a href="<?php echo buildUrl($current_page + 1, $filters); ?>" class="page-button">
-                <i class="fa-solid fa-chevron-right"></i>
+            <a href="<?php echo buildUrl($current_page + 1, $filters); ?>" class="page-btn" title="Next">
+                <i class="ph-bold ph-caret-right"></i>
+            </a>
+            <a href="<?php echo buildUrl($total_pages, $filters); ?>" class="page-btn" title="Last Page">
+                <i class="ph-bold ph-caret-double-right"></i>
             </a>
         <?php else: ?>
-            <span class="page-button disabled"><i class="fa-solid fa-chevron-right"></i></span>
+            <span class="page-btn disabled"><i class="ph-bold ph-caret-right"></i></span>
+            <span class="page-btn disabled"><i class="ph-bold ph-caret-double-right"></i></span>
         <?php endif; ?>
-
-        <?php if ($current_page < $total_pages): ?>
-            <a href="<?php echo buildUrl($total_pages, $filters); ?>" class="page-button" title="Last Page">
-                <i class="fa-solid fa-angles-right"></i>
-            </a>
-        <?php else: ?>
-            <span class="page-button disabled"><i class="fa-solid fa-angles-right"></i></span>
-        <?php endif; ?>
-
     </div>
     <?php endif; ?>
+
 </div>
 
 <script>
     $(document).ready(function() {
         const auditLogsPath = '../../View/Auth/AuditLogs.php';
-        const container_selector = '#ajax-result';
         
-        $('.pagination .page-button').on('click', function(e) {
+        // Handle Pagination Clicks via AJAX
+        $('.pagination-container .page-btn').on('click', function(e) {
             if ($(this).hasClass('disabled')) return false;
             e.preventDefault();
 
             const urlParams = $(this).attr('href');
-            $(this).closest('.audit-logs').parent().load(auditLogsPath + urlParams)
+            $('#ajax-result').load(auditLogsPath + urlParams);
         });
 
-        $('.audit-log-filter').on('submit', function(e) {
+        // Handle Filter Form Submit via AJAX
+        $('.filter-form').on('submit', function(e) {
             e.preventDefault();
-
             const formData = $(this).serialize();
             const fullUrl = auditLogsPath + '?page=1&' + formData;
-            
-            $(this).closest('.audit-logs').parent().load(fullUrl);
+            $('#ajax-result').load(fullUrl);
         });
 
-        $('#export-button').on('click', function(e) {
-            e.preventDefault();
-            const urlParams = new URLSearchParams(window.location.search);
-            
-            const formData = $('.audit-log-filter').serialize();
-            
-            window.location.href = auditLogsPath + '?export=true&' + formData;
+    });
+
+    // --- PDF Generation Logic ---
+
+    function loadScript(url) {
+        return new Promise((resolve, reject) => {
+            if (document.querySelector(`script[src="${url}"]`)) {
+                resolve();
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = url;
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
         });
-    });
+    }
 
+    async function ensurePDFLibraries() {
+        if (!window.jspdf) {
+            await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+        }
+        if (!window.jsPDF && window.jspdf) {
+            window.jsPDF = window.jspdf.jsPDF;
+        }
+        try {
+            const tempDoc = new window.jsPDF();
+            if (typeof tempDoc.autoTable !== 'function') {
+                await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js");
+            }
+        } catch (e) {
+            await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js");
+        }
+    }
 
-    document.getElementById('export-button').addEventListener('click', function(e) {
-        e.preventDefault();
-        const urlParams = new URLSearchParams(window.location.search);
-        urlParams.set('export', 'true');
-        
-        const auditLogsPath = '../Auth/AuditLogs.php'; 
-        window.location.href = auditLogsPath + '?' + urlParams.toString();
-    });
+    function loadImage(url) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = "Anonymous"; 
+            img.src = url;
+            img.onload = () => resolve(img);
+            img.onerror = () => resolve(null);
+        });
+    }
+
+    async function generateAuditPDF() {
+        const btn = document.querySelector('.btn-export');
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '<i class="ph-bold ph-spinner ph-spin"></i> Generating...';
+        btn.disabled = true;
+
+        try {
+            await ensurePDFLibraries();
+
+            // Fetch data
+            const formData = $('.filter-form').serialize();
+            const response = await fetch('../../View/Auth/AuditLogs.php?export_pdf=true&' + formData);
+            const logs = await response.json();
+
+            const doc = new window.jsPDF();
+            const logoUrl = '/Assets/Icon/2ENTRAL-1.png'; 
+            const logoImg = await loadImage(logoUrl);
+            const date = new Date().toLocaleString();
+            const primaryColor = [26, 37, 48]; // Brand Dark
+
+            // Header
+            if (logoImg) {
+                doc.addImage(logoImg, 'PNG', 14, 10, 25, 25);
+                doc.setFontSize(20);
+                doc.setTextColor(...primaryColor);
+                doc.text("Audit Log Report", 45, 22);
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                doc.text("System Activity & Security Records", 45, 28);
+            } else {
+                doc.setFontSize(20);
+                doc.setTextColor(...primaryColor);
+                doc.text("Audit Log Report", 14, 22);
+            }
+
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Generated on: ${date}`, 14, 45);
+            
+            // Table Data
+            const tableBody = logs.map(log => [
+                log.CreatedAt,
+                log.UserName || 'Unknown',
+                log.LogsDetails
+            ]);
+
+            doc.autoTable({
+                startY: 50,
+                head: [['Timestamp', 'User', 'Activity Details']],
+                body: tableBody,
+                theme: 'grid',
+                headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+                styles: { fontSize: 9, cellPadding: 3 },
+                columnStyles: {
+                    0: { cellWidth: 45 },
+                    1: { cellWidth: 40 },
+                    2: { cellWidth: 'auto' }
+                },
+                didDrawPage: function (data) {
+                    // Footer
+                    doc.setFontSize(8);
+                    doc.setTextColor(150);
+                    doc.text('Confidential - Internal Use Only', 14, doc.internal.pageSize.height - 10);
+                    doc.text('Page ' + doc.internal.getNumberOfPages(), doc.internal.pageSize.width - 25, doc.internal.pageSize.height - 10);
+                }
+            });
+
+            doc.save(`Audit_Logs_${new Date().toISOString().slice(0,10)}.pdf`);
+
+        } catch (err) {
+            console.error(err);
+            alert("Failed to generate PDF.");
+        } finally {
+            btn.innerHTML = originalContent;
+            btn.disabled = false;
+        }
+    }
 </script>

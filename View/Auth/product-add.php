@@ -165,6 +165,16 @@ if (!$insert_stmt->bind_param('ssssidisi', $product_id, $product_name, $descript
 // Execute insert
 if ($insert_stmt->execute()) {
     $insert_stmt->close();
+    
+    // Log creation
+    $logDetails = "Created Product: " . $product_name;
+    $logStmt = $conn->prepare("INSERT INTO inventory_logs (LogsDetails, ProductID, UserID) VALUES (?, ?, ?)");
+    if ($logStmt) {
+        $logStmt->bind_param("ssi", $logDetails, $product_id, $user_id);
+        $logStmt->execute();
+        $logStmt->close();
+    }
+
     error_log("Product created by user $user_id: $product_id ($product_name)");
     echo json_encode(['success' => true, 'message' => 'Product created successfully', 'product_id' => $product_id]);
 } else {

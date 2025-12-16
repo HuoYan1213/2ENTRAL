@@ -81,7 +81,7 @@ if (empty($product_id)) {
 }
 
 // Check if product exists and get image path
-$check_stmt = $conn->prepare("SELECT ProductID, ImagePath FROM products WHERE ProductID = ?");
+$check_stmt = $conn->prepare("SELECT ProductID, ProductName, ImagePath FROM products WHERE ProductID = ?");
 if (!$check_stmt) {
     error_log('DB Prepare Error (check): ' . $conn->error);
     send_json(['success' => false, 'message' => 'Database error']);
@@ -98,6 +98,7 @@ if ($result->num_rows === 0) {
 
 $product_row = $result->fetch_assoc();
 $image_path = $product_row['ImagePath'];
+$product_name = $product_row['ProductName'];
 $check_stmt->close();
 
 // Check for dependent rows that would block deletion
@@ -131,6 +132,16 @@ if (isset($_POST['soft']) && $_POST['soft'] === '1') {
     $upd->bind_param('s', $product_id);
     if ($upd->execute()) {
         $upd->close();
+
+        // Log soft delete
+        $logDetails = "Deactivated Product: " . $product_name;
+        $logStmt = $conn->prepare("INSERT INTO inventory_logs (LogsDetails, ProductID, UserID) VALUES (?, ?, ?)");
+        if ($logStmt) {
+            $logStmt->bind_param("ssi", $logDetails, $product_id, $user_id);
+            $logStmt->execute();
+            $logStmt->close();
+        }
+
         send_json(['success' => true, 'message' => 'Product deactivated (soft-deleted) successfully', 'deps' => $dep_counts]);
     } else {
         $err = $upd->error;
@@ -170,6 +181,17 @@ if ($delete_stmt->execute()) {
     }
     
     $delete_stmt->close();
+
+    // Log hard delete (using default system ID since product is gone)
+    $logDetails = "Deleted Product Permanently: " . $product_name . " (" . $product_id . ")";
+    $defaultProductID = '2025DEF000';
+    $logStmt = $conn->prepare("INSERT INTO inventory_logs (LogsDetails, ProductID, UserID) VALUES (?, ?, ?)");
+    if ($logStmt) {
+        $logStmt->bind_param("ssi", $logDetails, $defaultProductID, $user_id);
+        $logStmt->execute();
+        $logStmt->close();
+    }
+
     error_log("Product deleted by user $user_id: $product_id");
     send_json(['success' => true, 'message' => 'Product deleted successfully']);
 } else {

@@ -70,76 +70,65 @@ if (!isset($_SESSION['user'])) {
             height: 44px; 
         }
 
-        /* 1. 🏀 篮球 (Basketball) - 0s 延迟 */
         .item-1 { 
             background: #FF8C00; 
             border-color: #E65100; 
             animation-delay: 0s;
         }
 
-        /* 2. 🏸 羽毛球 (Badminton) - 0.8s 延迟 */
         .item-2 { 
             background: linear-gradient(to bottom right, #00FFF2, #FFFFFF); 
             border-color: #00B8A9; 
             animation-delay: calc(1s * 1);
         }
         
-        /* 3. ⚽ 足球 (Soccer) */
         .item-3 { 
             background: linear-gradient(to bottom right, #FFFFFF, #000000); 
             border-color: #333333; 
             animation-delay: calc(1s * 2); }
 
-        /* 4. 🎾 网球 (Tennis) */
         .item-4 { 
             background: linear-gradient(to bottom right, #03FF35, #000000); 
             border-color: #A0CC00; 
             animation-delay: calc(1s * 3); 
         }
 
-        /* 5. ⛳ 高尔夫 (Golf) */
         .item-5 { 
             background: linear-gradient(to bottom right, #FF2003, #000000); 
             border-color: #B71C1C; 
             animation-delay: calc(1s * 4); 
         }
 
-        /* 6. 🏓 乒乓球拍 (Ping Pong) */
         .item-6 { 
             background: #030BFF; 
             border-color: #0D47A1; 
             animation-delay: calc(1s * 5); 
         }
 
-        /* 7. 🏐 排球 (Volleyball) */
         .item-7 { 
             background: linear-gradient(to bottom right, #0B03FF, #FFF921); 
             border-color: #F9A825; 
             animation-delay: calc(1s * 6); 
         }
 
-        /* 8. ⚾ 棒球棒 (Baseball Bat) */
         .item-8 { 
             background: #969696; 
             border-color: #757575; 
             animation-delay: calc(1s * 7); 
         }
 
-        /* 9. 🏉 橄榄球 (Rugby) */
         .item-9 { 
             background: linear-gradient(to bottom right, #000000, #E37800); 
             border-color: #6D4C41; 
             animation-delay: calc(1s * 8); 
         }
 
-        /* 10. 🎳 保龄球 (Bowling) */
         .item-10 { 
             background: linear-gradient(to bottom right, #9E9E9E, #000000); 
             border-color: #1A2530; 
             animation-delay: calc(1s * 9); 
         }
 
-        /* 11. 📦 箱子 (Box) */
         .item-11 { 
             background: var(--brand-primary); 
             border-color: #3A8EB0; 
@@ -274,7 +263,7 @@ if (!isset($_SESSION['user'])) {
         const sub_text = document.getElementById('sub-text');
 
         // --- Configuration ---
-        const min_wait_time = 11000; // 3 seconds
+        const min_wait_time = 5000; // 3 seconds
 
         // --- Promises for loading ---
 

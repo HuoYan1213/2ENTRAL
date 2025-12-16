@@ -20,7 +20,7 @@ $productResult = mysqli_query($conn, $productQuery);
         gap: 20px;
         margin-bottom: 25px;
         padding-bottom: 20px;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--border);
     }
 
     .sd-logo {
@@ -28,19 +28,19 @@ $productResult = mysqli_query($conn, $productQuery);
         height: 80px;
         object-fit: cover;
         border-radius: 50%; /* Circular logo looks modern */
-        border: 2px solid #f0f0f0;
-        background: #fafafa;
+        border: 2px solid var(--border);
+        background: var(--bg-light);
     }
 
     .sd-info h2 {
         margin: 0 0 5px 0;
         font-size: 24px;
-        color: #333;
+        color: var(--text-dark);
     }
 
     .sd-info p {
         margin: 0;
-        color: #666;
+        color: var(--text-grey);
         font-size: 14px;
         display: flex;
         align-items: center;
@@ -50,7 +50,7 @@ $productResult = mysqli_query($conn, $productQuery);
     .sd-products-title {
         font-size: 16px;
         font-weight: 700;
-        color: #444;
+        color: var(--text-dark);
         margin-bottom: 15px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -66,16 +66,16 @@ $productResult = mysqli_query($conn, $productQuery);
     .sd-table th {
         text-align: left;
         padding: 12px;
-        background-color: #f8f9fa;
-        color: #666;
+        background-color: var(--bg-light);
+        color: var(--text-grey);
         font-weight: 600;
-        border-bottom: 2px solid #eee;
+        border-bottom: 2px solid var(--border);
     }
 
     .sd-table td {
         padding: 12px;
-        border-bottom: 1px solid #f0f0f0;
-        color: #333;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-dark);
     }
 
     .sd-table tr:last-child td {
@@ -83,7 +83,7 @@ $productResult = mysqli_query($conn, $productQuery);
     }
 
     .sd-table tr:hover {
-        background-color: #fcfcfc;
+        background-color: var(--bg-light);
     }
 
     .stock-tag {

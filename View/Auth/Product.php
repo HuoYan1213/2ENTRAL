@@ -95,15 +95,16 @@ if (isset($_GET['id'])) {
 <style>
     /* Product-specific styles for dashboard integration */
     .product-content {
-        padding: 20px;
-        background-color: #f9f9f9;
-        min-height: 100vh;
+        background-color: var(--bg-light);
+        width: 100%;
+        min-height: 100%;
+        box-sizing: border-box;
     }
     
     
 
     .product-header {
-        background-color: white;
+        background-color: var(--card-white);
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         padding: 15px 0;
         margin-bottom: 20px;
@@ -121,7 +122,7 @@ if (isset($_GET['id'])) {
     .product-logo {
         font-size: 24px;
         font-weight: 700;
-        color: #333;
+        color: var(--text-dark);
         text-decoration: none;
     }
     
@@ -142,11 +143,13 @@ if (isset($_GET['id'])) {
     .search-input {
         flex: 1;
         padding: 10px 15px;
-        border: 1px solid #ddd;
+        border: 1px solid var(--border);
         border-radius: 25px 0 0 25px;
         font-size: 14px;
         outline: none;
         transition: border-color 0.3s;
+        background: var(--bg-light);
+        color: var(--text-dark);
     }
     
     .search-input:focus {
@@ -169,9 +172,10 @@ if (isset($_GET['id'])) {
     
     .sort-select {
         padding: 10px 15px;
-        border: 1px solid #ddd;
+        border: 1px solid var(--border);
         border-radius: 25px;
-        background-color: white;
+        background-color: var(--bg-light);
+        color: var(--text-dark);
         font-size: 14px;
         cursor: pointer;
         outline: none;
@@ -184,7 +188,7 @@ if (isset($_GET['id'])) {
     
     /* Single Product Section */
     .product-section {
-        background-color: white;
+        background-color: var(--card-white);
         border-radius: 8px;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
         margin: 20px 0;
@@ -206,7 +210,7 @@ if (isset($_GET['id'])) {
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: #fafafa;
+        background-color: var(--bg-light);
     }
     
     .product-image img {
@@ -225,7 +229,7 @@ if (isset($_GET['id'])) {
     .product-title {
         font-size: 28px;
         margin-bottom: 15px;
-        color: #222;
+        color: var(--text-dark);
     }
     
     .product-category {
@@ -243,12 +247,12 @@ if (isset($_GET['id'])) {
         font-size: 24px;
         font-weight: 600;
         margin-bottom: 20px;
-        color: #2c3e50;
+        color: var(--text-dark);
     }
     
     .product-description {
         margin-bottom: 25px;
-        color: #666;
+        color: var(--text-grey);
         line-height: 1.7;
     }
     
@@ -256,7 +260,7 @@ if (isset($_GET['id'])) {
         margin-bottom: 20px;
         padding: 15px;
         border-radius: 6px;
-        background-color: #f8f9fa;
+        background-color: var(--bg-light);
     }
     
     .stock-status {
@@ -292,23 +296,25 @@ if (isset($_GET['id'])) {
     .quantity-btn {
         width: 36px;
         height: 36px;
-        background-color: #f5f5f5;
-        border: 1px solid #ddd;
+        background-color: var(--bg-light);
+        border: 1px solid var(--border);
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         font-size: 18px;
+        color: var(--text-dark);
     }
     
     .quantity-input {
         width: 50px;
         height: 36px;
         text-align: center;
-        border: 1px solid #ddd;
+        border: 1px solid var(--border);
         border-left: none;
         border-right: none;
-        background-color: white;
+        background-color: var(--card-white);
+        color: var(--text-dark);
     }
     
     .add-to-cart {
@@ -335,9 +341,9 @@ if (isset($_GET['id'])) {
     }
     
     .wishlist-btn {
-        background-color: white;
-        color: #555;
-        border: 1px solid #ddd;
+        background-color: var(--card-white);
+        color: var(--text-grey);
+        border: 1px solid var(--border);
         padding: 12px 25px;
         font-size: 16px;
         border-radius: 4px;
@@ -347,13 +353,13 @@ if (isset($_GET['id'])) {
     }
     
     .wishlist-btn:hover {
-        border-color: #aaa;
-        color: #333;
+        border-color: var(--text-grey);
+        color: var(--text-dark);
     }
     
     /* Products Grid */
     .products-section {
-        background-color: white;
+        background-color: var(--card-white);
         border-radius: 8px;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
         padding: 30px;
@@ -367,14 +373,14 @@ if (isset($_GET['id'])) {
     .section-title {
         font-size: 28px;
         margin-bottom: 30px;
-        color: #222;
+        color: var(--text-dark);
         text-align: center;
     }
     
     .search-results-info {
         text-align: center;
         margin-bottom: 20px;
-        color: #666;
+        color: var(--text-grey);
     }
     
     .products-grid {
@@ -385,11 +391,11 @@ if (isset($_GET['id'])) {
     }
     
     .product-card {
-        border: 1px solid #eee;
+        border: 1px solid var(--border);
         border-radius: 8px;
         overflow: hidden;
         transition: transform 0.3s, box-shadow 0.3s;
-        background: white;
+        background: var(--card-white);
         display: flex;
         flex-direction: column;
         height: 100%;
@@ -406,7 +412,7 @@ if (isset($_GET['id'])) {
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: #fafafa;
+        background-color: var(--bg-light);
         padding: 20px;
         flex-shrink: 0;
     }
@@ -429,7 +435,7 @@ if (isset($_GET['id'])) {
         font-size: 16px;
         font-weight: 600;
         margin-bottom: 10px;
-        color: #333;
+        color: var(--text-dark);
         line-height: 1.4;
         display: -webkit-box;
       
@@ -457,7 +463,7 @@ if (isset($_GET['id'])) {
     .product-card-price {
         font-size: 18px;
         font-weight: 600;
-        color: #2c3e50;
+        color: var(--text-dark);
         margin-bottom: 8px;
     }
     
@@ -469,7 +475,7 @@ if (isset($_GET['id'])) {
     
     .product-card-id {
         font-size: 11px;
-        color: #888;
+        color: var(--text-grey);
         margin-bottom: 12px;
         font-family: monospace;
         word-break: break-all;
@@ -534,7 +540,7 @@ if (isset($_GET['id'])) {
     }
     
     .modal-content {
-        background-color: #fff;
+        background-color: var(--card-white);
         margin: auto;
         padding: 20px;
         border-radius: 8px;
@@ -554,7 +560,7 @@ if (isset($_GET['id'])) {
     
     .modal-header h2 {
         margin: 0;
-        color: #1b3a57;
+        color: var(--text-dark);
     }
     
     .close-btn {
@@ -577,16 +583,18 @@ if (isset($_GET['id'])) {
         display: block;
         margin-bottom: 5px;
         font-weight: 600;
-        color: #1b3a57;
+        color: var(--text-dark);
     }
     
     .form-group input, .form-group textarea {
         width: 100%;
         padding: 10px;
-        border: 1px solid #ddd;
+        border: 1px solid var(--border);
         border-radius: 4px;
         font-size: 14px;
         box-sizing: border-box;
+        background: var(--bg-light);
+        color: var(--text-dark);
     }
     
     .form-group textarea {

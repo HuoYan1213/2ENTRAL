@@ -9,7 +9,25 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== "Manager") {
 require_once __DIR__ . "/../../Controller/UserController.php";
 $controller = new UserController();
 
-$users = $controller->getUsers();
+// Pagination & Filtering Logic
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) $page = 1;
+
+$filters = [
+    'search' => $_GET['search'] ?? '',
+    'role' => $_GET['role'] ?? '',
+    'status' => $_GET['status'] ?? ''
+];
+
+$data = $controller->getUsersPaginated($page, 5, $filters); // Limit 5 per page
+$users = $data['users'];
+$total_pages = $data['total_pages'];
+$current_page = $data['current_page'];
+
+function buildUrl($newPage, $currentFilters) {
+    $params = array_merge($currentFilters, ['page' => $newPage]);
+    return '?' . http_build_query(array_filter($params, function($v) { return $v !== ''; })); 
+}
 
 $latestImagePath = $controller->getUserAvatar($_SESSION['user']['id']);
 if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
@@ -17,72 +35,60 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Users & Roles</title>
-    <link rel="stylesheet" href="../../Assets/CSS/usersroles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
-</head>
-<body>
-    <div class="userole-title">
-        <h2>Users & Roles</h2>
-        <span>Manage system users and their permissions.</span>
-    </div>
+<link rel="stylesheet" href="../../Assets/CSS/usersroles.css">
+<!-- Include Phosphor Icons -->
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-    <div class="search-container">
-    <div class="search-box">
-        <i class="fas fa-search"></i>
-        <input type="text" id="search-input" placeholder="Search users...">
-    </div>
-    <div class="filter-options">
-        
-        <select class="filter-select" id="role-filter">
-            <option value="">All Roles</option>
-            <option value="Manager">Manager</option>
-            <option value="Employee">Employee</option>
-        </select>
-        <select class="filter-select" id="status-filter">
-            <option value="">All Status</option>
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-        </select>
+<div class="users-roles-wrapper">
 
-        <button class="action-btn add-user-btn" id="addUserBtn" style="background-color: #9b59b6;">
-            <i class="fas fa-user-plus"></i> Add User
+    <!-- Page Intro -->
+    <div class="page-intro">
+        <button class="btn-export" onclick="generateUserPDF()">
+            <i class="ph-bold ph-file-pdf"></i> Export PDF
         </button>
     </div>
-</div>
 
-    <div class="table-container">
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <div class="search-group">
+            <i class="ph ph-magnifying-glass" style="color: #999;"></i>
+            <input type="text" class="search-input" id="search-input" placeholder="Search name, email..." value="<?php echo htmlspecialchars($filters['search']); ?>">
+        </div>
+
+        <div class="filter-group">
+            <i class="ph ph-funnel" style="color: #666;"></i>
+            <select class="filter-select" id="role-filter">
+                <option value="">All Roles</option>
+                <option value="Manager" <?php echo $filters['role'] === 'Manager' ? 'selected' : ''; ?>>Manager</option>
+                <option value="Employee" <?php echo $filters['role'] === 'Employee' ? 'selected' : ''; ?>>Employee</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <i class="ph ph-toggle-left" style="color: #666;"></i>
+            <select class="filter-select" id="status-filter">
+                <option value="">All Status</option>
+                <option value="Active" <?php echo $filters['status'] === 'Active' ? 'selected' : ''; ?>>Active</option>
+                <option value="Inactive" <?php echo $filters['status'] === 'Inactive' ? 'selected' : ''; ?>>Inactive</option>
+            </select>
+        </div>
+
+        <button class="btn-add-user" id="addUserBtn">
+            <i class="ph-bold ph-plus"></i> Add New User
+        </button>
+    </div>
+
+    <!-- Table Card -->
+    <div class="table-card">
+        <div class="table-scroll">
         <table id="users-table">
             <thead>
                 <tr>
-                    <th data-sort="numeric" data-column="0" class="sortable sort-asc">
-                        ID 
-                        <span class="sort-icon-container">
-                            <i class="fas fa-sort-up"></i>
-                            <i class="fas fa-sort-down"></i>
-                        </span>
-                    </th> 
-                    
-                    <th data-sort="text" data-column="1" class="sortable">
-                        Name 
-                        <span class="sort-icon-container">
-                            <i class="fas fa-sort-up"></i>
-                            <i class="fas fa-sort-down"></i>
-                        </span>
-                    </th>
-                    
-                    <th>Email</th>
-                    <th>Create At</th>
+                    <th>User</th>
                     <th>Role</th>
                     <th>Status</th>
-                    <th>Action</th>
+                    <th>Joined Date</th>
+                    <th style="text-align: right;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -96,20 +102,20 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
                         $isTargetManager = $user['Role'] === 'Manager';
                         $isEditingSelf = $user['UserID'] == $currentUserID;
                         $disableRoleStatus = $isTargetManager; 
+                        $roleBadgeClass = ($user['Role'] === 'Manager') ? 'role-admin' : 'role-staff';
+                        $roleIcon = ($user['Role'] === 'Manager') ? '<i class="ph-fill ph-crown"></i>' : '';
                         
-                        $roleDisabledAttr = $disableRoleStatus ? 'disabled' : '';
-                        $statusDisabledAttr = $disableRoleStatus ? 'disabled' : '';
-                        $editButtonHidden = ($isTargetManager && !$isEditingSelf) ? 'style="display:none;"' : '';
+                        // Determine if actions are allowed
+                        $canEdit = !$isTargetManager; // Managers cannot be edited from this panel
+                        $canToggleStatus = !$isTargetManager;
                     ?>
                     <tr data-userid="<?php echo $user['UserID']; ?>" 
                         data-original-role="<?php echo htmlspecialchars($user['Role'] ?? ''); ?>"
                         data-original-status="<?php echo htmlspecialchars($userStatus); ?>">
                         
-                        <td><?php echo htmlspecialchars($user['UserID']); ?></td> 
-                        
                         <td>
-                            <div class="name-cell">
-                                <div class="avatar-preview">
+                            <div class="user-info-cell">
+                                <div class="user-avatar-lg">
                                     <?php 
                                     $imagePath = $user['ImagePath'] ?? '';
                                     $hasValidImage = !empty($imagePath) && strpos($imagePath, 'default_user_') === false;
@@ -123,74 +129,97 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
                                         ?>
                                         <?php if ($imageExists): ?>
                                             <img src="<?php echo $webImagePath; ?>" 
-                                                 alt="Avatar" 
-                                                 style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover;"
-                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                            <div class="default-avatar-fallback" style="width: 35px; height: 35px; border-radius: 50%; background: #ddd; display: none; align-items: center; justify-content: center;">
-                                                <i class="fas fa-user" style="color: #666; font-size: 14px;"></i>
-                                            </div>
+                                                 alt="Avatar"
+                                                 onerror="this.style.display='none'; this.parentNode.innerHTML='<?php echo strtoupper(substr($user['UserName'], 0, 2)); ?>';">
                                         <?php else: ?>
-                                            <div style="width: 35px; height: 35px; border-radius: 50%; background: #ddd; display: flex; align-items: center; justify-content: center;">
-                                                <i class="fas fa-user" style="color: #666; font-size: 14px;"></i>
-                                            </div>
+                                            <?php echo strtoupper(substr($user['UserName'], 0, 2)); ?>
                                         <?php endif; ?>
                                     <?php else: ?>
-                                        <div style="width: 35px; height: 35px; border-radius: 50%; background: #ddd; display: flex; align-items: center; justify-content: center;">
-                                            <i class="fas fa-user" style="color: #666; font-size: 14px;"></i>
-                                            </div>
-                                        <?php endif; ?>
+                                        <?php echo strtoupper(substr($user['UserName'], 0, 2)); ?>
+                                    <?php endif; ?>
                                 </div>
-                                <?php echo htmlspecialchars($user['UserName'] ?? ''); ?>
+                                <div class="user-detail">
+                                    <h4><?php echo htmlspecialchars($user['UserName'] ?? ''); ?></h4>
+                                    <p><?php echo htmlspecialchars($user['Email'] ?? ''); ?></p>
+                                </div>
                             </div>
                         </td>
-                        <td><?php echo htmlspecialchars($user['Email'] ?? ''); ?></td>
+                        <td>
+                            <span class="role-badge <?php echo $roleBadgeClass; ?>">
+                                <?php echo $roleIcon; ?> <?php echo htmlspecialchars($user['Role']); ?>
+                            </span>
+                        </td>
+                        <td>
+                            <label class="switch">
+                                <input type="checkbox" class="status-toggle" 
+                                    data-userid="<?php echo $user['UserID']; ?>" 
+                                    data-username="<?php echo htmlspecialchars($user['UserName']); ?>"
+                                    <?php echo $userStatus === 'Active' ? 'checked' : ''; ?>
+                                    <?php echo !$canToggleStatus ? 'disabled' : ''; ?>>
+                                <span class="slider"></span>
+                            </label>
+                        </td>
                         <td>
                             <?php 
                             $createdAt = $user['CreatedAt'] ?? '';
                             if (!empty($createdAt)) {
-                                echo date('Y-m-d H:i:s', strtotime($createdAt));
+                                echo date('M j, Y', strtotime($createdAt));
                             } else {
                                 echo 'N/A';
                             }
                             ?>
                         </td>
-                        <td>
-                            <select class="role-select" data-userid="<?php echo $user['UserID']; ?>" data-username="<?php echo htmlspecialchars($user['UserName'] ?? ''); ?>" <?php echo $roleDisabledAttr; ?>>
-                                <option value="Employee" <?php echo ($user['Role'] ?? '') === 'Employee' ? 'selected' : ''; ?>>Employee</option>
-                                <option value="Manager" <?php echo ($user['Role'] ?? '') === 'Manager' ? 'selected' : ''; ?>>Manager</option>
-                            </select>
-                        </td>
-                        <td>
-                            <select class="status-select" data-userid="<?php echo $user['UserID']; ?>" data-username="<?php echo htmlspecialchars($user['UserName'] ?? ''); ?>" <?php echo $statusDisabledAttr; ?>>
-                                <option value="Active" <?php echo $userStatus === 'Active' ? 'selected' : ''; ?>>Active</option>
-                                <option value="Inactive" <?php echo $userStatus === 'Inactive' ? 'selected' : ''; ?>>Inactive</option>
-                            </select>
-                        </td>
-                        <td>
-                            <button class="action-btn edit-user" data-userid="<?php echo $user['UserID']; ?>" <?php echo $editButtonHidden; ?>>
-                                <i class="fas fa-edit"></i> Edit
+                        <td style="text-align: right;">
+                            <?php if ($canEdit): ?>
+                            <button class="action-btn edit-user" title="Edit" data-userid="<?php echo $user['UserID']; ?>">
+                                <i class="ph-bold ph-pencil-simple"></i>
                             </button>
-                            <button class="action-btn btn-save-role save-role" data-userid="<?php echo $user['UserID']; ?>" style="display: none;">
-                                <i class="fas fa-save"></i> Save Role
-                            </button>
-                            <button class="action-btn btn-save-status save-status" data-userid="<?php echo $user['UserID']; ?>" style="display: none;">
-                                <i class="fas fa-save"></i> Save Status
-                            </button>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 20px;">No users found</td>
+                        <td colspan="5" style="text-align: center; padding: 20px;">No users found</td>
                     </tr>
                 <?php endif; ?>
             </tbody>
         </table>
-        <div class="no-results" id="no-results">
-            <i class="fas fa-search" style="font-size: 48px; margin-bottom: 10px;"></i>
+        </div>
+        
+        <?php if (empty($users)): ?>
+        <div class="no-results" id="no-results" style="display: block;">
+            <i class="ph ph-magnifying-glass" style="font-size: 48px; margin-bottom: 10px;"></i>
             <p>No users found matching your criteria.</p>
         </div>
+        <?php endif; ?>
     </div>
+
+    <!-- Pagination -->
+    <?php if ($total_pages > 1): ?>
+    <div class="pagination-container">
+        <?php if ($current_page > 1): ?>
+            <a href="<?php echo buildUrl(1, $filters); ?>" class="page-btn" title="First Page"><i class="ph-bold ph-caret-double-left"></i></a>
+            <a href="<?php echo buildUrl($current_page - 1, $filters); ?>" class="page-btn" title="Previous"><i class="ph-bold ph-caret-left"></i></a>
+        <?php else: ?>
+            <span class="page-btn disabled"><i class="ph-bold ph-caret-double-left"></i></span>
+            <span class="page-btn disabled"><i class="ph-bold ph-caret-left"></i></span>
+        <?php endif; ?>
+
+        <span class="page-info">
+            Page <?php echo $current_page; ?> of <?php echo $total_pages; ?>
+        </span>
+
+        <?php if ($current_page < $total_pages): ?>
+            <a href="<?php echo buildUrl($current_page + 1, $filters); ?>" class="page-btn" title="Next"><i class="ph-bold ph-caret-right"></i></a>
+            <a href="<?php echo buildUrl($total_pages, $filters); ?>" class="page-btn" title="Last Page"><i class="ph-bold ph-caret-double-right"></i></a>
+        <?php else: ?>
+            <span class="page-btn disabled"><i class="ph-bold ph-caret-right"></i></span>
+            <span class="page-btn disabled"><i class="ph-bold ph-caret-double-right"></i></span>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+</div>
 
     <div id="editUserModal" class="modal">
         <div class="modal-content">
@@ -207,13 +236,13 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
                         <div class="avatar-preview-container" id="avatarPreviewContainer">
                             <div class="avatar-preview-large" id="avatarPreview">
                                 <div class="default-avatar">
-                                    <i class="fas fa-user"></i>
+                                    <i class="ph-fill ph-user"></i>
                                 </div>
                             </div>
                         </div>
                         <input type="file" id="avatarInput" class="avatar-upload-input" name="avatar" accept="image/*">
                         <label for="avatarInput" class="avatar-upload-label">
-                            <i class="fas fa-upload"></i> Choose Profile Image
+                            <i class="ph-bold ph-upload-simple"></i> Choose Profile Image
                         </label>
                         <div class="file-info" id="fileInfo">No file chosen</div>
                         
@@ -271,7 +300,7 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
                     <div class="avatar-preview-container" id="addAvatarPreviewContainer">
                         <div class="avatar-preview-large" id="addAvatarPreview">
                             <div class="default-avatar">
-                                <i class="fas fa-user"></i>
+                                <i class="ph-fill ph-user"></i>
                             </div>
                         </div>
                     </div>
@@ -279,12 +308,12 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
                     
                     <div style="display: flex; gap: 10px; justify-content: center; align-items: center;">
                         <label for="addAvatarInput" class="avatar-upload-label">
-                            <i class="fas fa-upload"></i> Choose Profile Image
+                            <i class="ph-bold ph-upload-simple"></i> Choose Profile Image
                         </label>
                         <button type="button" class="action-btn btn-cancel" id="cancelAddAvatar" 
                             style="margin: 0; height: 36px; box-sizing: border-box; display: none;"
                             title="Cancel Upload">
-                            <i class="fas fa-times"></i> Cancel
+                            <i class="ph-bold ph-x"></i> Cancel
                         </button>
                     </div>
                     <div class="file-info" id="addFileInfo">No file chosen</div>
@@ -343,6 +372,35 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
 
     <script>
     $(document).ready(function() {
+        const usersRolesPath = 'UsersRoles.php';
+
+        // Handle Pagination Clicks
+        $('.pagination-container .page-btn').on('click', function(e) {
+            if ($(this).hasClass('disabled')) return false;
+            e.preventDefault();
+            const urlParams = $(this).attr('href');
+            $('#ajax-result').load(usersRolesPath + urlParams);
+        });
+
+        // Handle Filters
+        function reloadWithFilters(page = 1) {
+            const search = $('#search-input').val();
+            const role = $('#role-filter').val();
+            const status = $('#status-filter').val();
+            
+            const params = new URLSearchParams({
+                page: page,
+                search: search,
+                role: role,
+                status: status
+            });
+            
+            $('#ajax-result').load(usersRolesPath + '?' + params.toString());
+        }
+
+        let searchTimeout;
+        $('#search-input').on('input', function() { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => reloadWithFilters(1), 500); });
+        $('#role-filter, #status-filter').on('change', function() { reloadWithFilters(1); });
         
         function setupAvatarUpload(containerId, inputId, previewId, fileInfoId, cancelButtonId) {
             const avatarContainer = document.getElementById(containerId);
@@ -401,7 +459,7 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
                         fileInfo.textContent = 'No file chosen';
                     }
                     if (avatarPreview) {
-                         avatarPreview.innerHTML = '<div class="default-avatar"><i class="fas fa-user"></i></div>';
+                         avatarPreview.innerHTML = '<div class="default-avatar"><i class="ph-fill ph-user"></i></div>';
                     }
                     if (cancelButton) cancelButton.style.display = 'none';
 
@@ -469,7 +527,7 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
         $('#addUserBtn').click(function() {
             $('#addUserForm')[0].reset();
             $('#addFileInfo').text('No file chosen');
-            $('#addAvatarPreview').html('<div class="default-avatar"><i class="fas fa-user"></i></div>');
+            $('#addAvatarPreview').html('<div class="default-avatar"><i class="ph-fill ph-user"></i></div>');
             $('#cancelAddAvatar').hide(); 
             $('#addUserModal').css('display', 'flex');
         });
@@ -491,7 +549,7 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
             
             const submitBtn = $('#addUserForm').find('button[type="submit"]');
             const originalText = submitBtn.html();
-            submitBtn.html('<i class="fas fa-spinner fa-spin"></i> Adding...').prop('disabled', true);
+            submitBtn.html('<i class="ph-bold ph-spinner ph-spin"></i> Adding...').prop('disabled', true);
             
             $.ajax({
                 url: '../../Controller/UserController.php?action=addUser',
@@ -506,7 +564,7 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
                     if (response && response.success) {
                         alert('User added successfully!');
                         $('#addUserModal').hide();
-                        $('#ajax-result').load('UsersRoles.php');
+                        reloadWithFilters(1); // Reload current view
                     } else {
                         const errorMsg = response ? response.message : 'Unknown error occurred';
                         alert('Failed to add user: ' + errorMsg);
@@ -524,7 +582,8 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
             userID: null,
             userName: null,
             newValue: null,
-            originalValue: null
+            originalValue: null,
+            checkbox: null
         };
 
         $(document).on('click', '.edit-user', function() {
@@ -567,7 +626,7 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
                             avatarPreview.html('<img src="' + imageUrl + '" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">');
                         } else {
                             avatarPreview.html('<div class="default-avatar" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #f0f0f0; border-radius: 50%;">' +
-                                '<i class="fas fa-user" style="font-size: 48px; color: #666;"></i>' +
+                                '<i class="ph-fill ph-user" style="font-size: 48px; color: #666;"></i>' +
                                 '</div>');
                         }
                         
@@ -599,6 +658,11 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
         });
         $('#closeConfirmModal, #cancelConfirm').click(function() {
             $('#confirmationModal').hide();
+            
+            // Revert checkbox if it was a status toggle
+            if (pendingChange.type === 'status' && pendingChange.checkbox) {
+                pendingChange.checkbox.prop('checked', pendingChange.originalValue === 'Active');
+            }
         });
         $(window).click(function(event) {
             if ($(event.target).is('#editUserModal')) {
@@ -606,6 +670,9 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
             }
             if ($(event.target).is('#confirmationModal')) {
                 $('#confirmationModal').hide();
+                if (pendingChange.type === 'status' && pendingChange.checkbox) {
+                    pendingChange.checkbox.prop('checked', pendingChange.originalValue === 'Active');
+                }
             }
         });
 
@@ -633,7 +700,7 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
             
             const submitBtn = $('#editUserForm').find('button[type="submit"]');
             const originalText = submitBtn.html();
-            submitBtn.html('<i class="fas fa-spinner fa-spin"></i> Saving...').prop('disabled', true);
+            submitBtn.html('<i class="ph-bold ph-spinner ph-spin"></i> Saving...').prop('disabled', true);
             
             $.ajax({
                 url: '../../Controller/UserController.php?action=editUser',
@@ -662,7 +729,7 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
                             window.dispatchEvent(updateEvent);
                         }
 
-                        $('#ajax-result').load('UsersRoles.php');
+                        reloadWithFilters(<?php echo $current_page; ?>); // Reload current page
                     } else {
                         const errorMsg = response ? response.message : 'Unknown error occurred';
                         alert('Failed to update user: ' + errorMsg);
@@ -675,77 +742,27 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
             });
         }
 
-        $('#users-table').on('change', '.role-select', function() {
-            if ($(this).is(':disabled')) return; 
-            const newRole = $(this).val();
-            const originalRole = $(this).closest('tr').data('original-role');
+        // Status Toggle Handler
+        $(document).on('change', '.status-toggle', function(e) {
+            e.preventDefault();
             
-            if (newRole === originalRole) {
-                $(this).closest('tr').find('.save-role').hide();
-                return;
-            }
-            
-            $(this).closest('tr').find('.save-role').show();
-        });
-
-        $('#users-table').on('change', '.status-select', function() {
-            if ($(this).is(':disabled')) return; 
-            const newStatus = $(this).val();
-            const originalStatus = $(this).closest('tr').data('original-status');
-            
-            if (newStatus === originalStatus) {
-                $(this).closest('tr').find('.save-status').hide();
-                return;
-            }
-            
-            $(this).closest('tr').find('.save-status').show();
-        });
-
-        $('#users-table').on('click', '.save-role', function() {
-            if ($(this).closest('tr').find('.role-select').is(':disabled')) return;
             const userID = $(this).data('userid');
-            const $row = $(this).closest('tr');
-            const $roleSelect = $row.find('.role-select');
-            const userName = $row.find('.name-cell > span').text();
-            const newRole = $roleSelect.val();
-            const originalRole = $row.data('original-role');
-            
-            pendingChange = {
-                type: 'role',
-                userID: userID,
-                userName: userName,
-                newValue: newRole,
-                originalValue: originalRole
-            };
-            
-            $('#confirmationMessage').html(
-                `Are you sure you want to change <strong>${userName}</strong>'s role?<br><br>
-                <strong>From:</strong> ${originalRole}<br>
-                <strong>To:</strong> ${newRole}`
-            );
-            $('#confirmationModal').css('display', 'flex');
-        });
-
-        $('#users-table').on('click', '.save-status', function() {
-            if ($(this).closest('tr').find('.status-select').is(':disabled')) return;
-            const userID = $(this).data('userid');
-            const $row = $(this).closest('tr');
-            const $statusSelect = $row.find('.status-select');
-            const userName = $row.find('.name-cell > span').text();
-            const newStatus = $statusSelect.val();
-            const originalStatus = $row.data('original-status');
+            const userName = $(this).data('username');
+            const isChecked = $(this).is(':checked');
+            const newStatus = isChecked ? 'Active' : 'Inactive';
+            const originalStatus = !isChecked ? 'Active' : 'Inactive';
             
             pendingChange = {
                 type: 'status',
                 userID: userID,
                 userName: userName,
                 newValue: newStatus,
-                originalValue: originalStatus
+                originalValue: originalStatus,
+                checkbox: $(this)
             };
             
             $('#confirmationMessage').html(
                 `Are you sure you want to change <strong>${userName}</strong>'s status?<br><br>
-                <strong>From:</strong> ${originalStatus}<br>
                 <strong>To:</strong> ${newStatus}`
             );
             $('#confirmationModal').css('display', 'flex');
@@ -755,69 +772,13 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
         $('#confirmChange').click(function() {
             $('#confirmationModal').hide();
             
-            if (pendingChange.type === 'role') {
-                updateUserRole();
-            } else if (pendingChange.type === 'status') {
+            if (pendingChange.type === 'status') {
                 updateUserStatus();
             }
         });
 
-        $('#cancelConfirm').click(function() {
-            $('#confirmationModal').hide();
-            
-            const $row = $(`tr[data-userid="${pendingChange.userID}"]`);
-            if (pendingChange.type === 'role') {
-                $row.find('.role-select').val(pendingChange.originalValue);
-                $row.find('.save-role').hide();
-            } else if (pendingChange.type === 'status') {
-                $row.find('.status-select').val(pendingChange.originalValue);
-                $row.find('.save-status').hide();
-            }
-        });
-
-        function updateUserRole() {
-            const { userID, newValue, originalValue } = pendingChange;
-            
-            const $saveBtn = $(`tr[data-userid="${userID}"] .save-role`);
-            const originalText = $saveBtn.html();
-            $saveBtn.html('<i class="fas fa-spinner fa-spin"></i> Saving...').prop('disabled', true);
-            
-            $.ajax({
-                url: '../../Controller/UserController.php?action=updateUserRole',
-                type: 'POST',
-                data: {
-                    userID: userID,
-                    role: newValue
-                },
-                dataType: 'json',
-                success: function(response) {
-                    $saveBtn.html(originalText).prop('disabled', false);
-                    
-                    if (response && response.success) {
-                        alert('User role updated successfully!');
-                        $('#ajax-result').load('UsersRoles.php');
-                    } else {
-                        const errorMsg = response ? response.message : 'Unknown error occurred';
-                        alert('Failed to update user role: ' + errorMsg);
-                        $row.find('.role-select').val(originalValue);
-                        $row.find('.save-role').hide();
-                    }
-                },
-                error: function(xhr, status, error) {
-                    $saveBtn.html(originalText).prop('disabled', false);
-                    alert('Error updating user role. Please try again.');
-                    $row.find('.role-select').val(originalValue);
-                    $row.find('.save-role').hide();
-                }
-            });
-        }
-
         function updateUserStatus() {
-            const { userID, newValue, originalValue } = pendingChange;
-            
-            const $saveBtn = $(`tr[data-userid="${userID}"] .save-status`);
-            const originalText = $saveBtn.html();
-            $saveBtn.html('<i class="fas fa-spinner fa-spin"></i> Saving...').prop('disabled', true);
+            const { userID, newValue, originalValue, checkbox } = pendingChange;
             
             $.ajax({
                 url: '../../Controller/UserController.php?action=updateUserStatus',
@@ -828,128 +789,98 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
                 },
                 dataType: 'json',
                 success: function(response) {
-                    $saveBtn.html(originalText).prop('disabled', false);
-                    
                     if (response && response.success) {
-                        alert('User status updated successfully!');
-                        $('#ajax-result').load('UsersRoles.php');
+                        // Success, no need to reload entire page, just update data attribute
+                        $(`tr[data-userid="${userID}"]`).data('original-status', newValue);
                     } else {
                         const errorMsg = response ? response.message : 'Unknown error occurred';
                         alert('Failed to update user status: ' + errorMsg);
-                        $row.find('.status-select').val(originalValue);
-                        $row.find('.save-status').hide();
+                        // Revert checkbox
+                        if(checkbox) checkbox.prop('checked', originalValue === 'Active');
                     }
                 },
                 error: function(xhr, status, error) {
-                    $saveBtn.html(originalText).prop('disabled', false);
                     alert('Error updating user status. Please try again.');
-                    $row.find('.status-select').val(originalValue);
-                    $row.find('.save-status').hide();
+                    // Revert checkbox
+                    if(checkbox) checkbox.prop('checked', originalValue === 'Active');
                 }
             });
         }
-
-        $(document).on('click', '#users-table th.sortable', function() {
-            const $header = $(this);
-            const columnIndex = $header.data('column');
-            const sortType = $header.data('sort');
-            
-            let direction = 'asc';
-            if ($header.hasClass('sort-asc')) {
-                direction = 'desc';
-            } else if ($header.hasClass('sort-desc')) {
-                direction = 'asc';
-            }
-            
-            $('#users-table th.sortable').removeClass('sort-asc sort-desc');
-
-            $header.addClass('sort-' + direction);
-            
-            sortTable(columnIndex, direction, sortType);
-        });
-
-        function sortTable(columnIndex, direction, type) {
-            const $tbody = $('#users-table tbody');
-            const rows = $tbody.find('tr').toArray();
-            
-            rows.sort(function(a, b) {
-                let valA, valB;
-                
-                if ($(a).find('td').length < 7 || $(b).find('td').length < 7) {
-                    return 0;
-                }
-
-                if (columnIndex == 1) { 
-                    valA = $(a).find('td').eq(columnIndex).text().trim();
-                    valB = $(b).find('td').eq(columnIndex).text().trim();
-                } else {
-                    valA = $(a).find('td').eq(columnIndex).text().trim();
-                    valB = $(b).find('td').eq(columnIndex).text().trim();
-                }
-
-                let comparison = 0;
-
-                if (type === 'numeric') {
-                    const numA = parseFloat(valA) || 0;
-                    const numB = parseFloat(valB) || 0;
-                    comparison = numA - numB;
-                } else { 
-                    comparison = valA.localeCompare(valB, 'en', { sensitivity: 'base' });
-                }
-                
-                return direction === 'asc' ? comparison : -comparison;
-            });
-            
-            $tbody.empty();
-            $.each(rows, function(index, row) {
-                $tbody.append(row);
-            });
-        }
-
-        $('#search-input').on('input', filterUsers);
-        $('#role-filter, #status-filter').change(filterUsers);
-
-        function filterUsers() {
-            const searchTerm = $('#search-input').val().toLowerCase();
-            const roleFilter = $('#role-filter').val();
-            const statusFilter = $('#status-filter').val();
-            
-            let hasVisibleRows = false;
-            
-            $('#users-table tbody tr').each(function() {
-                if ($(this).find('td').length < 7) return; 
-                
-                const userID = $(this).find('td:nth-child(1)').text().toLowerCase(); 
-                const userName = $(this).find('td:nth-child(2)').text().toLowerCase();
-                
-                const userRole = $(this).find('.role-select').val();
-                const userStatus = $(this).find('.status-select').val();
-                
-                const matchesSearch = userID.includes(searchTerm) || userName.includes(searchTerm);
-                
-                const matchesRole = !roleFilter || userRole === roleFilter;
-                const matchesStatus = !statusFilter || userStatus === statusFilter;
-                
-                const isVisible = matchesSearch && matchesRole && matchesStatus;
-                $(this).toggle(isVisible);
-                
-                if (isVisible) hasVisibleRows = true;
-            });
-            
-            $('#no-results').toggle(!hasVisibleRows);
-        }
-
-        const initialSortColumn = 0;
-        const initialSortDirection = 'asc';
-        const initialSortType = 'numeric';
-        
-        sortTable(initialSortColumn, initialSortDirection, initialSortType);
-        
-        $('#no-results').hide();
 
         setupAvatarUpload('addAvatarPreviewContainer', 'addAvatarInput', 'addAvatarPreview', 'addFileInfo', 'cancelAddAvatar'); 
         setupAvatarUpload('avatarPreviewContainer', 'avatarInput', 'avatarPreview', 'fileInfo', null); 
     });
+
+    // --- PDF Generation Logic ---
+    function loadScript(url) {
+        return new Promise((resolve, reject) => {
+            if (document.querySelector(`script[src="${url}"]`)) { resolve(); return; }
+            const script = document.createElement('script');
+            script.src = url;
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    async function ensurePDFLibraries() {
+        if (!window.jspdf) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+        if (!window.jsPDF && window.jspdf) window.jsPDF = window.jspdf.jsPDF;
+        try {
+            const tempDoc = new window.jsPDF();
+            if (typeof tempDoc.autoTable !== 'function') await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js");
+        } catch (e) {
+            await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js");
+        }
+    }
+
+    async function generateUserPDF() {
+        const btn = document.querySelector('.btn-export');
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '<i class="ph-bold ph-spinner ph-spin"></i> Generating...';
+        btn.disabled = true;
+
+        try {
+            await ensurePDFLibraries();
+            const doc = new window.jsPDF();
+            
+            // Header
+            doc.setFontSize(18);
+            doc.setTextColor(26, 37, 48);
+            doc.text("User Roles Report", 14, 20);
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text("Generated on: " + new Date().toLocaleString(), 14, 28);
+
+            // Collect Data from Table (Respects current filters)
+            // Note: This only exports the current page. To export all, a separate endpoint is needed.
+            const rows = [];
+            $('#users-table tbody tr').each(function() {
+                const $row = $(this);
+                const name = $row.find('.user-detail h4').text().trim();
+                const email = $row.find('.user-detail p').text().trim();
+                const role = $row.find('.role-badge').text().trim();
+                const status = $row.data('original-status');
+                const joined = $row.find('td:eq(3)').text().trim();
+                rows.push([name, email, role, status, joined]);
+            });
+
+            doc.autoTable({
+                startY: 35,
+                head: [['Name', 'Email', 'Role', 'Status', 'Joined Date']],
+                body: rows,
+                theme: 'grid',
+                headStyles: { fillColor: [26, 37, 48] },
+                styles: { fontSize: 10, cellPadding: 4 }
+            });
+
+            doc.save(`Users_Report_${new Date().toISOString().slice(0,10)}.pdf`);
+        } catch (err) {
+            console.error(err);
+            alert("Failed to generate PDF.");
+        } finally {
+            btn.innerHTML = originalContent;
+            btn.disabled = false;
+        }
+    }
     </script>
-</body>
-</html>

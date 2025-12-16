@@ -32,7 +32,7 @@ if ($supResult) {
         .main-order-container * { box-sizing: border-box; }
         .main-order-container { 
             height: 100%; 
-            background: #f4f6f9; 
+            background: var(--bg-light); 
             position: relative; 
             overflow: hidden; 
         }
@@ -44,7 +44,7 @@ if ($supResult) {
             gap: 25px; margin-top: 20px; padding-bottom: 50px;
         }
         .supplier-card {
-            background: white; border-radius: 12px; padding: 25px;
+            background: var(--card-white); border-radius: 12px; padding: 25px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; transition: 0.3s;
             border: 2px solid transparent; display: flex; flex-direction: column; align-items: center;
         }
@@ -52,8 +52,8 @@ if ($supResult) {
             transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-color: #3498db;
         }
         .supplier-card img { width: 100px; height: 100px; object-fit: contain; margin-bottom: 15px; }
-        .sup-name { font-size: 1.1rem; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
-        .sup-contact { font-size: 0.9rem; color: #7f8c8d; }
+        .sup-name { font-size: 1.1rem; font-weight: bold; color: var(--text-dark); margin-bottom: 5px; }
+        .sup-contact { font-size: 0.9rem; color: var(--text-grey); }
 
         /* --- VIEW 2: PRODUCT ORDERING --- */
         #view-products { display: none; height: 100%; display: flex; flex-direction: column; }
@@ -64,7 +64,7 @@ if ($supResult) {
         
         .top-bar { 
             flex-shrink: 0; display: flex; align-items: center; gap: 15px; 
-            background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+            background: var(--card-white); padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
         }
 
         /* CHANGED: List View for Rectangles */
@@ -75,7 +75,7 @@ if ($supResult) {
 
         /* CHANGED: Horizontal Card Styling */
         .product-card { 
-            background: white; border-radius: 10px; padding: 15px; 
+            background: var(--card-white); border-radius: 10px; padding: 15px; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
             display: flex; flex-direction: row; align-items: center; /* Horizontal alignment */
             border-left: 5px solid #3498db; /* Accent on left */
@@ -90,9 +90,9 @@ if ($supResult) {
 
         /* Middle Info Section */
         .card-info { flex: 1; text-align: left; }
-        .p-name { font-weight: bold; font-size: 1rem; color: #2c3e50; margin-bottom: 4px; }
-        .p-meta { font-size: 0.85rem; color: #7f8c8d; display: flex; gap: 15px; }
-        .stock-tag { font-weight: bold; padding: 2px 6px; border-radius: 4px; background: #f0f0f0; }
+        .p-name { font-weight: bold; font-size: 1rem; color: var(--text-dark); margin-bottom: 4px; }
+        .p-meta { font-size: 0.85rem; color: var(--text-grey); display: flex; gap: 15px; }
+        .stock-tag { font-weight: bold; padding: 2px 6px; border-radius: 4px; background: var(--bg-light); }
         .good-stock { color: #2ecc71; }
         .low-stock { color: #e74c3c; }
         .p-price { font-weight: bold; color: #2980b9; }
@@ -101,7 +101,7 @@ if ($supResult) {
         .action-group { 
             display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; 
         }
-        .qty-input-field { width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 5px; text-align: center; }
+        .qty-input-field { width: 70px; padding: 5px; border: 1px solid var(--border); border-radius: 5px; text-align: center; background: var(--bg-light); color: var(--text-dark); }
         .btn-add { 
             background: #34495e; color: white; border: none; padding: 8px 15px; 
             border-radius: 5px; cursor: pointer; font-size: 0.9rem;
@@ -110,27 +110,27 @@ if ($supResult) {
 
         /* RIGHT: CART (Unchanged logic, kept styles) */
         .cart-section { 
-            flex: 3; background: white; border-radius: 15px; padding: 20px; 
+            flex: 3; background: var(--card-white); border-radius: 15px; padding: 20px; 
             display: flex; flex-direction: column; box-shadow: 0 5px 15px rgba(0,0,0,0.05); 
             height: 100%; border-top: 5px solid #2ecc71; overflow: hidden; 
         }
-        .cart-header { flex-shrink: 0; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; color: #2c3e50; }
+        .cart-header { flex-shrink: 0; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid var(--border); padding-bottom: 10px; color: var(--text-dark); }
         .cart-items { flex: 1; overflow-y: auto; margin-bottom: 15px; min-height: 0; }
-        .cart-footer { flex-shrink: 0; border-top: 2px solid #f0f0f0; padding-top: 15px; background: white; }
+        .cart-footer { flex-shrink: 0; border-top: 2px solid var(--border); padding-top: 15px; background: var(--card-white); }
         
-        .cart-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        .cart-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; color: var(--text-dark); }
         .cart-controls { display: flex; align-items: center; gap: 3px; }
-        .qty-btn { width: 22px; height: 22px; border: 1px solid #ddd; background: #fff; cursor: pointer; }
+        .qty-btn { width: 22px; height: 22px; border: 1px solid var(--border); background: var(--bg-light); color: var(--text-dark); cursor: pointer; }
         .remove-btn { color: #e74c3c; cursor: pointer; margin-left: 8px; }
-        .total-row { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; }
+        .total-row { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; color: var(--text-dark); }
         .btn-checkout { background: #27ae60; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
         .btn-checkout:disabled { background: #bdc3c7; cursor: not-allowed; }
         .btn-back-sup { padding: 8px 15px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;}
-        .search-input { padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 220px; }
+        .search-input { padding: 8px; border: 1px solid var(--border); border-radius: 5px; width: 220px; background: var(--bg-light); color: var(--text-dark); }
     </style>
 
     <div id="view-suppliers">
-        <h2 style="color: #2c3e50;">Select Supplier</h2>
+        <h2 style="color: var(--text-dark);">Select Supplier</h2>
         <div class="supplier-grid">
             <?php foreach($suppliers as $sup): ?>
                 <div class="supplier-card" onclick="selectSupplier('<?php echo $sup['SupplierID']; ?>', '<?php echo htmlspecialchars($sup['SupplierName']); ?>')">
@@ -149,7 +149,7 @@ if ($supResult) {
                     <button class="btn-back-sup" id="btnChangeSupplier">
                         <i class="fa-solid fa-arrow-left"></i> Back
                     </button>
-                    <div id="activeSupplierDisplay" style="font-weight:bold; flex:1; font-size:1.1rem; color:#2c3e50;"></div>
+                    <div id="activeSupplierDisplay" style="font-weight:bold; flex:1; font-size:1.1rem; color:var(--text-dark);"></div>
                     <input type="text" id="searchProduct" class="search-input" placeholder="Search products...">
                 </div>
 

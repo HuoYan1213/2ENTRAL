@@ -29,35 +29,42 @@ if (isset($_SESSION['flash_message'])) {
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory Management</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="/Assets/CSS/inventory.css">
-
-<body>
+<title>Inventory Management</title>
+<link rel="stylesheet" href="/Assets/CSS/inventory.css">
+<style>
+    /* Dark Mode Overrides for Inventory */
+    .title-section h1 { color: var(--text-dark); }
+    .title-section p { color: var(--text-grey); }
+    .user-info span { color: var(--text-dark); }
+    .stat-card { background: var(--card-white); color: var(--text-dark); }
+    .stat-label { color: var(--text-grey); }
+    .stat-value { color: var(--text-dark); }
+    .category-trigger { background: var(--card-white); border: 1px solid var(--border); color: var(--text-dark); }
+    .category-dropdown { background: var(--card-white); border: 1px solid var(--border); }
+    .cat-option { color: var(--text-dark); }
+    .cat-option:hover { background: var(--bg-light); }
+    .tabs-nav .tab { color: var(--text-grey); }
+    .tabs-nav .tab.active { color: var(--text-dark); border-bottom-color: var(--primary); }
+    .search-input { background: var(--bg-light); color: var(--text-dark); border: 1px solid var(--border); }
+    .tabs-header { background: var(--card-white); border-bottom: 1px solid var(--border); }
+    .table-container { background: var(--card-white); }
+    table th { background: var(--bg-light); color: var(--text-grey); border-bottom: 1px solid var(--border); }
+    table td { color: var(--text-dark); border-bottom: 1px solid var(--border); }
+    .modal-content { background: var(--card-white); color: var(--text-dark); }
+    .form-label { color: var(--text-dark); }
+    .form-control { background: var(--bg-light); color: var(--text-dark); border: 1px solid var(--border); }
+    .empty-state h3 { color: var(--text-dark); }
+    .empty-state p { color: var(--text-grey); }
+</style>
 
 <div class="inventory-container">
-    <div class="header">
-    <div class="title-section">
-        <h1>Inventory Management</h1>
-        <p>Manage your inventory items and track stock movements</p>
-    </div>
-    
-    <div style="display: flex; gap: 15px; align-items: center;">
-        <button class="btn btn-primary" onclick="generatePDF()">
-            <i class="fas fa-file-pdf"></i> Export Report
-        </button>
-        
-        <div class="user-info">
-            <i class="fas fa-user-circle"></i>
-            <span><?= htmlspecialchars($currentUser ?? ($_SESSION['user']['name'] ?? 'User')) ?></span>
+    <div class="header">    
+        <div style="display: flex; gap: 15px; align-items: center;justify-content: flex-end; width: 100%;">
+            <button class="btn btn-primary" onclick="generatePDF()">
+                <i class="fas fa-file-pdf"></i> Export Report
+            </button>
         </div>
     </div>
-</div>
 
     <?php if (!empty($message)): ?>
         <div class="alert alert-<?= $message['type'] === 'success' ? 'success' : 'error' ?>">
@@ -991,6 +998,3 @@ async function generatePDF() {
     }
 }
 </script>
-
-</body>
-</html>

@@ -15,6 +15,23 @@ class AuthController {
             session_start();
         }
 
+        // Log logout action
+        if (isset($_SESSION['user']['id'])) {
+            require __DIR__ . "/../Model/DB.php";
+            if (!isset($conn)) global $conn;
+
+            $userID = $_SESSION['user']['id'];
+            $logDetails = "User Logout";
+            $defaultProductID = '2025DEF000'; // Use default ID for system logs
+
+            $stmt = $conn->prepare("INSERT INTO inventory_logs (LogsDetails, ProductID, UserID) VALUES (?, ?, ?)");
+            if ($stmt) {
+                $stmt->bind_param("ssi", $logDetails, $defaultProductID, $userID);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }
+
         session_unset();
         session_destroy();
 

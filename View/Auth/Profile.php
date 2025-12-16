@@ -52,341 +52,233 @@ if (!isset($_SESSION['user'])) {
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Profile</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link rel="stylesheet" href="../../Assets/CSS/usersroles.css">
-    
-</head>
-<body>
-<div class="profile-container">
-    <div class="profile-header">
-        <div class="profile-avatar">
-            <?php 
-            $imageSrc = '../../Assets/Image/User/' . $CURRENT_IMAGE;
-            $placeholderUrl = 'https://ui-avatars.com/api/?name=' . urlencode($CURRENT_NAME) . '&background=3498db&color=fff';
-            
-            $isDefaultImage = empty($CURRENT_IMAGE) || $CURRENT_IMAGE === 'default.png' || strpos($CURRENT_IMAGE, 'default_user_') !== false;
-            
-            if (!$isDefaultImage): 
-            ?>
-                <img src="<?= $imageSrc ?>?t=<?= time() ?>" alt="<?= $CURRENT_NAME ?>" 
-                     onerror="this.src='<?= $placeholderUrl ?>'; this.onerror=null;"> 
-            <?php else: ?>
-                <img src="<?= $placeholderUrl ?>" alt="<?= $CURRENT_NAME ?>">
-            <?php endif; ?>
-        </div>
-        <div class="profile-info">
-            <h1><?= htmlspecialchars($CURRENT_NAME) ?></h1>
-            <p><?= htmlspecialchars($CURRENT_EMAIL) ?></p>
-            <span class="role-badge"><?= htmlspecialchars($CURRENT_ROLE) ?></span>
-        </div>
-    </div>
+<link href="../../Assets/CSS/profile.css" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-    <div class="profile-content">
-        <div class="profile-overview" id="profileOverview">
-            <div class="overview-header">
-                <h2 class="section-title">Profile Overview</h2>
-            </div>
-            
-            <div class="info-grid">
-                <div class="info-group">
-                    <div class="info-label">Full Name</div>
-                    <div class="info-value"><?= htmlspecialchars($CURRENT_NAME) ?></div>
-                </div>
-                
-                <div class="info-group">
-                    <div class="info-label">Email Address</div>
-                    <div class="info-value"><?= htmlspecialchars($CURRENT_EMAIL) ?></div>
-                </div>
-                
-                <div class="info-group">
-                    <div class="info-label">Role</div>
-                    <div class="info-value"><?= htmlspecialchars($CURRENT_ROLE) ?></div>
-                </div>
-                
-                <div class="info-group">
-                    <div class="info-label">Account Status</div>
-                    <div class="info-value">
-                        <span style="color: <?= $CURRENT_STATUS === 'Active' ? '#27ae60' : '#e74c3c'; ?>; font-weight: 600;">
-                            <i class="fas <?= $CURRENT_STATUS === 'Active' ? 'fa-check-circle' : 'fa-times-circle'; ?>"></i> <?= htmlspecialchars($CURRENT_STATUS) ?>
-                        </span>
-                    </div>
-                </div>
-                
-                <div class="info-group">
-                    <div class="info-label">Join Date</div>
-                    <div class="info-value">
-                        <?php if ($formattedJoinDate !== 'N/A'): ?>
-                            <i class="fas fa-calendar-alt"></i> <?= htmlspecialchars($formattedJoinDate) ?>
-                        <?php else: ?>
-                            <span style="color: #999; font-style: italic;"><?= htmlspecialchars($formattedJoinDate) ?></span>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                
-                <div class="info-group">
-                    <div class="info-label">User ID</div>
-                    <div class="info-value"><?= htmlspecialchars($CURRENT_ID) ?></div>
-                </div>
-            </div>
-            
-            <div class="overview-actions">
-                <button class="btn btn-primary" id="editProfileBtn">
-                    <i class="fas fa-edit"></i> Edit Profile
-                </button>
-            </div>
+<div class="toast-container" id="toastContainer"></div>
+<div class="modal-overlay" id="confirmModal">
+    <div class="modal-box">
+        <div class="modal-icon-large">
+            <i class="ph-fill ph-question"></i>
         </div>
+        <h3 class="modal-title">Confirm Action</h3>
+        <p class="modal-desc">Are you sure you want to proceed?</p>
         
-        <div class="edit-profile-form" id="editProfileForm" style="display: none;">
-            <div class="form-header">
-                <h2 class="section-title">Edit Profile</h2>
-            </div>
-            
-            <form id="profileForm">
-                <input type="hidden" id="currentImagePath" name="currentImagePath" value="<?= htmlspecialchars($CURRENT_IMAGE) ?>">
-                
-                <div class="form-group">
-                    <label>Profile Image</label>
-                    <div class="avatar-upload">
-                        <div class="avatar-preview-container" id="avatarPreviewContainer">
-                            <div class="avatar-preview-large" id="avatarPreview">
-                                <div class="default-avatar">
-                                    <i class="fas fa-user"></i>
-                                </div>
-                            </div>
-                            <div class="drop-message">Drop file here</div>
-                        </div>
-                        <input type="file" id="avatarInput" class="avatar-upload-input" name="avatar" accept="image/*">
-                        
-                        <label for="avatarInput" class="avatar-upload-label">
-                            <i class="fas fa-upload"></i> Choose Profile Image
-                        </label>
-                        <div class="file-info" id="fileInfo">No file chosen</div>
-                        
-                        <div class="form-group" style="margin-top: 15px; display: flex; align-items: center; justify-content: center;">
-                            <input type="checkbox" id="deleteAvatar" name="deleteAvatar" value="1" style="width: auto; margin-right: 5px;">
-                            <label for="deleteAvatar" style="font-weight: normal; margin-bottom: 0; cursor: pointer;">Delete Current Avatar</label>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="name">Full Name</label>
-                    <input type="text" id="name" name="name" class="form-control" value="<?= htmlspecialchars($CURRENT_NAME) ?>" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" class="form-control" value="<?= htmlspecialchars($CURRENT_EMAIL) ?>" required>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Save Changes
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="cancelEditBtn">
-                        <i class="fas fa-times"></i> Cancel
-                    </button>
-                </div>
-            </form>
+        <div class="modal-actions">
+            <button class="modal-btn btn-cancel" onclick="closeConfirmModal()">Cancel</button>
+            <button class="modal-btn btn-confirm" onclick="executePendingAction()">Confirm</button>
         </div>
     </div>
 </div>
 
-<script>
-    function getPlaceholderUrl() {
-        const currentName = '<?= urlencode($CURRENT_NAME) ?>';
-        return 'https://ui-avatars.com/api/?name=' + currentName + '&background=3498db&color=fff';
-    }
-
-    function showDefaultAvatar() {
-        const avatarPreview = document.getElementById('avatarPreview');
-        const fallbackUrl = getPlaceholderUrl(); 
-        if (avatarPreview) {
-            avatarPreview.innerHTML = '<img src="' + fallbackUrl + '" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">';
-        }
-    }
+<div class="profile-container">
     
-$(document).ready(function() {
-    
-    function setupAvatarUpload(containerId, inputId, previewId, fileInfoId) {
-        const avatarContainer = document.getElementById(containerId);
-        const avatarInput = document.getElementById(inputId);
-        const avatarPreview = document.getElementById(previewId);
-        const fileInfo = document.getElementById(fileInfoId);
+    <!-- Left: Player Card -->
+    <div class="player-card">
+        <div class="card-bg">
+            <div style="position:absolute; right:15px; top:15px; background:rgba(255,255,255,0.2); padding:4px 10px; border-radius:20px; color:white; font-size:0.75rem; display:flex; align-items:center; gap:5px;">
+                <div style="width:8px; height:8px; background:#66bb6a; border-radius:50%;"></div> <?= htmlspecialchars($CURRENT_STATUS) ?>
+            </div>
+        </div>
         
-        const dropMessage = avatarContainer ? avatarContainer.querySelector('.drop-message') : null;
+        <div class="profile-avatar" onclick="document.getElementById('avatarInput').click()" title="Click to change avatar">
+            <?php 
+            $imageSrc = '../../Assets/Image/User/' . $CURRENT_IMAGE;
+            $placeholderUrl = 'https://ui-avatars.com/api/?name=' . urlencode($CURRENT_NAME) . '&background=3498db&color=fff';
+            $isDefaultImage = empty($CURRENT_IMAGE) || $CURRENT_IMAGE === 'default.png' || strpos($CURRENT_IMAGE, 'default_user_') !== false;
+            ?>
+            <img src="<?= (!$isDefaultImage ? $imageSrc . '?t=' . time() : $placeholderUrl) ?>" id="cardAvatarImg" onerror="this.src='<?= $placeholderUrl ?>'">
+        </div>
 
-        if (avatarContainer) {
-            avatarContainer.addEventListener('click', function(e) {
-                if (!e.target.closest('.drop-message')) { 
-                    avatarInput.click();
-                }
-            });
-        }
+        <div class="player-name"><?= htmlspecialchars($CURRENT_NAME) ?></div>
+        <div class="player-role"><?= htmlspecialchars($CURRENT_ROLE) ?></div>
 
-        function handleFile(file) {
-            if (file) {
-                if (!file.type.match('image.*')) {
-                    alert('Please select an image file (JPEG, PNG, GIF, etc.)');
-                    avatarInput.value = '';
-                    return false;
-                }
-                if (file.size > 2 * 1024 * 1024) {
-                    alert('Image size should be less than 2MB');
-                    avatarInput.value = '';
-                    return false;
-                }
-
-                if (fileInfo) {
-                    fileInfo.textContent = file.name + ' (' + (file.size / 1024).toFixed(2) + ' KB)';
-                }
-                
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                avatarInput.files = dataTransfer.files;
-                
-                $('#deleteAvatar').prop('checked', false);
-
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    if (avatarPreview) {
-                        avatarPreview.innerHTML = '<img src="' + e.target.result + '" alt="Avatar Preview" style="width: 100%; height: 100%; object-fit: cover;">';
+        <div class="player-stats">
+            <div class="stat-box">
+                <div class="stat-num"><?= htmlspecialchars($formattedJoinDate) ?></div>
+                <div class="stat-label">Joined</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num">
+                    <?php 
+                    if (!empty($JOIN_DATE) && $JOIN_DATE !== 'N/A') {
+                        $join = new DateTime($JOIN_DATE);
+                        $now = new DateTime();
+                        $interval = $join->diff($now);
+                        echo ($interval->y > 0) ? $interval->y . 'yr' : (($interval->m > 0) ? $interval->m . 'mo' : $interval->d . 'd');
+                    } 
+                    else {
+                        echo '-';
                     }
-                };
-                reader.readAsDataURL(file);
-                
-                return true;
-            } else {
-                if (fileInfo) {
-                    fileInfo.textContent = 'No file chosen';
-                }
-                if (avatarPreview) {
-                     showDefaultAvatar(); 
-                }
-                return false;
-            }
-        }
+                    ?>
+                </div>
+                <div class="stat-label">Tenure</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Settings Card -->
+    <div class="settings-card">
+        <h3>Account Details</h3>
         
-        if (avatarInput) {
-            avatarInput.addEventListener('change', function() {
-                handleFile(this.files[0]);
-            });
-        }
+        <form id="profileForm">
+            <input type="hidden" id="currentImagePath" name="currentImagePath" value="<?= htmlspecialchars($CURRENT_IMAGE) ?>">
+            <input type="file" id="avatarInput" name="avatar" accept="image/*" style="display:none;">
+            <input type="hidden" id="deleteAvatar" name="deleteAvatar" value="0">
 
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            if(avatarContainer) avatarContainer.addEventListener(eventName, preventDefaults, false);
-        });
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="name" name="name" value="<?= htmlspecialchars($CURRENT_NAME) ?>">
+                </div>
+                <div class="form-group">
+                    <label>User ID</label>
+                    <input type="text" value="<?= htmlspecialchars($CURRENT_ID) ?>" disabled style="background:#f9f9f9; color:#888;">
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="email" name="email" value="<?= htmlspecialchars($CURRENT_EMAIL) ?>">
+                </div>
+                <div class="form-group">
+                    <label>Department</label>
+                    <input type="text" value="Logistics & Warehouse" disabled style="background:#f9f9f9; color:#888;">
+                </div>
+            </div>
 
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
+            <h3 class="section-header">Preferences</h3>
+            
+            <div class="toggle-row">
+                <div class="toggle-text">
+                    <h4>Dark Mode</h4>
+                    <p>Switch between light and dark themes interface.</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
 
-        ['dragenter', 'dragover'].forEach(eventName => {
-            if(avatarContainer) avatarContainer.addEventListener(eventName, highlight, false);
-        });
+            <div class="profile-actions">
+                <button type="submit" class="btn-save">Save Changes</button>
+                <button type="button" class="btn-logout">Log Out</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-        ['dragleave', 'drop'].forEach(eventName => {
-            if(avatarContainer) avatarContainer.addEventListener(eventName, unhighlight, false);
-        });
+<script>
+function showToast(type, message) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
 
-        function highlight() {
-            avatarContainer.classList.add('drag-over');
-            if(dropMessage) dropMessage.style.display = 'block';
-        }
-
-        function unhighlight() {
-            avatarContainer.classList.remove('drag-over');
-            if(dropMessage) dropMessage.style.display = 'none';
-        }
-
-        if(avatarContainer) {
-            avatarContainer.addEventListener('drop', handleDrop, false);
-        }
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-
-            if (files.length > 0) {
-                handleFile(files[0]); 
-            }
-        }
-    }
-
-    setupAvatarUpload('avatarPreviewContainer', 'avatarInput', 'avatarPreview', 'fileInfo'); 
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
     
-    $('#editProfileBtn').click(function() {
-        showEditForm();
-    });
+    let iconClass = type === 'success' ? 'ph-check-circle' : 'ph-warning-circle';
+    let title = type === 'success' ? 'Success' : 'Error';
 
-    $('#cancelEditBtn').click(function() {
-        hideEditForm();
-    });
+    toast.innerHTML = `
+        <div class="toast-icon"><i class="ph-fill ${iconClass}"></i></div>
+        <div class="toast-content">
+            <h4>${title}</h4>
+            <p>${message}</p>
+        </div>
+        <div class="toast-close" onclick="this.parentElement.remove()"><i class="ph-bold ph-x"></i></div>
+    `;
 
-    $('#deleteAvatar').on('change', function() {
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('hiding');
+        toast.addEventListener('animationend', () => {
+            // Check if the element is still in the DOM before removing
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        });
+    }, 3000);
+}
+
+let pendingAction = null;
+
+function showConfirmModal(type, title, message, actionCallback) {
+    const modal = document.getElementById('confirmModal');
+    const icon = modal.querySelector('.modal-icon-large i');
+    const titleEl = modal.querySelector('.modal-title');
+    const descEl = modal.querySelector('.modal-desc');
+    const confirmBtn = modal.querySelector('.btn-confirm');
+
+    titleEl.textContent = title;
+    descEl.innerHTML = message;
+    
+    // Customize based on type
+    if (type === 'logout') {
+        icon.className = 'ph-fill ph-sign-out';
+        icon.parentElement.style.background = 'rgba(239, 83, 80, 0.1)';
+        icon.parentElement.style.color = '#ef5350';
+        confirmBtn.style.background = 'var(--grad-pink)';
+        confirmBtn.textContent = 'Logout';
+    } else {
+        icon.className = 'ph-fill ph-floppy-disk';
+        icon.parentElement.style.background = 'rgba(2, 136, 209, 0.1)';
+        icon.parentElement.style.color = '#0288d1';
+        confirmBtn.style.background = 'var(--grad-blue)';
+        confirmBtn.textContent = 'Confirm';
+    }
+
+    pendingAction = actionCallback;
+    modal.classList.add('active');
+}
+
+function closeConfirmModal() {
+    document.getElementById('confirmModal').classList.remove('active');
+    pendingAction = null;
+}
+
+function executePendingAction() {
+    if (pendingAction) pendingAction();
+    closeConfirmModal();
+}
+
+$(document).ready(function() {
+    // Avatar Preview Logic
+    $('#avatarInput').on('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                $('#cardAvatarImg').attr('src', e.target.result);
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    // Dark Mode Logic
+    if (localStorage.getItem('darkMode') === 'enabled') {
+        $('#darkModeToggle').prop('checked', true);
+    }
+    $('#darkModeToggle').on('change', function() {
         if ($(this).is(':checked')) {
-            $('#avatarInput').val(''); 
-            
-            const fileInfo = document.getElementById('fileInfo');
-            if (fileInfo) {
-                fileInfo.textContent = 'No file chosen';
-            }
-
-            showDefaultAvatar();
+            $('body').addClass('dark-mode');
+            localStorage.setItem('darkMode', 'enabled');
+        } else {
+            $('body').removeClass('dark-mode');
+            localStorage.setItem('darkMode', 'disabled');
         }
     });
 
-    function showEditForm() {
-        $('#profileOverview').hide();
-        $('#editProfileForm').show();
-        
-        const currentImage = '<?= $CURRENT_IMAGE ?>';
-        const avatarPreview = document.getElementById('avatarPreview');
-        const isDefault = currentImage === 'default.png' || !currentImage || currentImage.startsWith('default_user_');
-        
-        $('#deleteAvatar').prop('checked', false);
-        $('#fileInfo').text('No file chosen');
-        $('#avatarInput').val(''); 
-
-        if (currentImage && !isDefault) {
-            const timestamp = new Date().getTime();
-            const imageUrl = '../../Assets/Image/User/' + currentImage + '?t=' + timestamp;
-            
-            if (avatarPreview) {
-                avatarPreview.innerHTML = '<img src="' + imageUrl + '" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;" onerror="showDefaultAvatar()">';
-            }
-        } else {
-            showDefaultAvatar();
-        }
-    }
-
-    function hideEditForm() {
-        $('#editProfileForm').hide();
-        $('#profileOverview').show();
-        
-        $('#profileForm')[0].reset();
-        $('#avatarInput').val('');
-        const fileInfo = document.getElementById('fileInfo');
-        if (fileInfo) {
-            fileInfo.textContent = 'No file chosen';
-        }
-        $('#deleteAvatar').prop('checked', false);
-    }
+    $('.btn-logout').click(function() {
+        showConfirmModal('logout', 'Log Out?', 'Are you sure you want to log out of your account?', function() {
+            window.location.href = '/Controller/UserController.php?action=logout';
+        });
+    });
 
     $('#profileForm').submit(function(e) {
         e.preventDefault();
         
-        if (confirm("Are you sure you want to save these profile changes? This action is irreversible.")) {
+        showConfirmModal('save', 'Save Changes?', 'Are you sure you want to update your profile information?', function() {
             saveProfileChanges();
-        }
+        });
     });
 
     function saveProfileChanges() {
@@ -394,7 +286,7 @@ $(document).ready(function() {
         
         formData.append('userID', '<?= $CURRENT_ID ?>');
         formData.append('userName', $('#name').val());
-        formData.append('email', $('#email').val());
+        formData.append('email', $('#email').val()); 
         formData.append('currentImagePath', $('#currentImagePath').val()); 
         
         const avatarFile = $('#avatarInput')[0].files[0];
@@ -422,7 +314,7 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(response) {
                 if (response && response.success) {
-                    alert('Profile updated successfully!'); 
+                    showToast('success', 'Profile updated successfully!');
 
                     const updateEvent = new CustomEvent('userProfileUpdated', {
                         detail: {
@@ -431,18 +323,18 @@ $(document).ready(function() {
                         }
                     });
                     window.dispatchEvent(updateEvent);
-
-                    $('#ajax-result').load('Profile.php');
-
+                    
+                    // No need to reload, UI updates via event.
+                    submitBtn.html(originalText).prop('disabled', false);
                 } else {
                     const errorMsg = response ? response.message : 'Unknown error occurred';
-                    alert('Failed to update profile: ' + errorMsg);
+                    showToast('error', 'Failed to update profile: ' + errorMsg);
                     submitBtn.html(originalText).prop('disabled', false);
                 }
             },
             error: function(xhr, status, error) {
                 console.error('AJAX Error:', xhr.responseText);
-                alert('Error updating profile. Please check console for details.');
+                showToast('error', 'Error updating profile. Please check the console.');
                 submitBtn.html(originalText).prop('disabled', false);
             }
         });
@@ -450,5 +342,3 @@ $(document).ready(function() {
 
 });
 </script>
-</body>
-</html>

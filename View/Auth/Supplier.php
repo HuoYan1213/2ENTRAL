@@ -1,6 +1,10 @@
 <?php
 require_once __DIR__ . "/../../Model/DB.php";
 
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
 // --- 1. HANDLE FORM SUBMISSIONS (AJAX STYLE) ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
@@ -29,6 +33,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         $sql = "INSERT INTO suppliers (SupplierName, Email, ImagePath, IsActive) VALUES ('$name', '$email', '$imagePath', 'Active')";
         mysqli_query($conn, $sql);
+
+        // Log Add Supplier
+        $userID = $_SESSION['user']['id'] ?? 0;
+        $logDetails = "Added Supplier: " . $name;
+        $defaultProductID = '2025DEF000';
+        $stmtLog = $conn->prepare("INSERT INTO inventory_logs (LogsDetails, ProductID, UserID) VALUES (?, ?, ?)");
+        $stmtLog->bind_param("ssi", $logDetails, $defaultProductID, $userID);
+        $stmtLog->execute();
+        $stmtLog->close();
+
         echo "success"; 
         exit(); 
     } 
@@ -58,6 +72,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         $sql = "UPDATE suppliers SET SupplierName='$name', Email='$email' $imageUpdateSQL WHERE SupplierID=$id";
         mysqli_query($conn, $sql);
+
+        // Log Edit Supplier
+        $userID = $_SESSION['user']['id'] ?? 0;
+        $logDetails = "Updated Supplier: " . $name;
+        $defaultProductID = '2025DEF000';
+        $stmtLog = $conn->prepare("INSERT INTO inventory_logs (LogsDetails, ProductID, UserID) VALUES (?, ?, ?)");
+        $stmtLog->bind_param("ssi", $logDetails, $defaultProductID, $userID);
+        $stmtLog->execute();
+        $stmtLog->close();
+
         echo "success";
         exit();
     }
@@ -65,8 +89,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // C. DELETE
     elseif (isset($_POST['action']) && $_POST['action'] == 'delete') {
         $id = (int)$_POST['supplier_id'];
+        
+        // Get name for log
+        $res = mysqli_query($conn, "SELECT SupplierName FROM suppliers WHERE SupplierID=$id");
+        $row = mysqli_fetch_assoc($res);
+        $supName = $row['SupplierName'] ?? 'Unknown';
+
         $sql = "UPDATE suppliers SET IsActive='Inactive' WHERE SupplierID=$id";
         mysqli_query($conn, $sql);
+
+        // Log Inactive Supplier
+        $userID = $_SESSION['user']['id'] ?? 0;
+        $logDetails = "Deleted Supplier: " . $supName;
+        $defaultProductID = '2025DEF000';
+        $stmtLog = $conn->prepare("INSERT INTO inventory_logs (LogsDetails, ProductID, UserID) VALUES (?, ?, ?)");
+        $stmtLog->bind_param("ssi", $logDetails, $defaultProductID, $userID);
+        $stmtLog->execute();
+        $stmtLog->close();
+
         echo "success";
         exit();
     }
@@ -92,11 +132,10 @@ $result = mysqli_query($conn, $query);
 <style>
     /* 1. Main Layout & Title */
     .supplier-container {
-        padding: 40px 60px;
-        background: #F8F5EE; 
+        background: transparent;
+        width: 100%;
         height: 100%;
         font-family: 'Segoe UI', Arial, sans-serif;
-        max-width: 100%;
         margin: 0;
     }
 
@@ -106,13 +145,6 @@ $result = mysqli_query($conn, $query);
         align-items: center;
         position: relative;
         margin-bottom: 40px;
-    }
-    .sup-title {
-        font-size: 36px;
-        font-weight: 900;
-        text-decoration: underline;
-        color: #000;
-        margin: 0 auto; 
     }
     
     /* Green Add Button */
@@ -139,9 +171,9 @@ $result = mysqli_query($conn, $query);
     /* 2. Grid System - 3 Columns (New Requirement) */
     .sup-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr); 
+        grid-template-columns: repeat(4, 1fr); 
         gap: 20px; 
-        max-width: 1000px; 
+        width: 100%; 
         margin: 0 auto;
     }
     /* Responsive adjustments */
@@ -150,7 +182,7 @@ $result = mysqli_query($conn, $query);
 
     /* 3. Card */
     .sup-card {
-        background: white;
+        background: var(--card-white);
         border-radius: 10px; 
         padding: 25px 20px; 
         display: flex;
@@ -173,7 +205,7 @@ $result = mysqli_query($conn, $query);
         display: flex;
         justify-content: center;
         align-items: center;
-        border: 1px solid #ccc;
+        border: 1px solid var(--border);
         border-radius: 4px;
     }
     .sup-img {
@@ -185,11 +217,11 @@ $result = mysqli_query($conn, $query);
         font-size: 16px; 
         font-weight: 700; 
         margin: 5px 0 3px 0; 
-        color: #2c3e50; 
+        color: var(--text-dark); 
     }
     .sup-email { 
         font-size: 12px; 
-        color: #7f8c8d; 
+        color: var(--text-grey); 
         margin-bottom: 20px; 
     }
 
@@ -213,11 +245,11 @@ $result = mysqli_query($conn, $query);
     .btn-view:hover { background-color: #2980b9; border-color: #2980b9; }
     
     .btn-edit { 
-        background-color: white; 
-        border: 1px solid #bdc3c7; 
-        color: #2c3e50; 
+        background-color: var(--card-white); 
+        border: 1px solid var(--border); 
+        color: var(--text-dark); 
     }
-    .btn-edit:hover { background-color: #f5f5f5; border-color: #95a5a6; }
+    .btn-edit:hover { background-color: var(--bg-light); border-color: #95a5a6; }
 
     /* 5. Pagination */
     .pagination {
@@ -237,7 +269,7 @@ $result = mysqli_query($conn, $query);
     }
 
     .pagination a {
-        background: #CCCCCC; 
+        background: var(--border); 
         color: #555;
         border: none;
     }
@@ -265,7 +297,7 @@ $result = mysqli_query($conn, $query);
     
     /* Add/Edit Modal Specific Style */
     #supModalContent {
-        background-color: white; 
+        background-color: var(--card-white); 
         padding: 25px; 
         border-radius: 8px; 
         width: 350px; 
@@ -274,7 +306,7 @@ $result = mysqli_query($conn, $query);
 
     /* Detail Modal Specific Style (Wider) */
     #detailModalContent {
-        background-color: white; 
+        background-color: var(--card-white); 
         padding: 25px; 
         border-radius: 8px; 
         width: 700px; 
@@ -294,8 +326,8 @@ $result = mysqli_query($conn, $query);
     
     /* Form styles */
     .form-group { margin-bottom: 10px; text-align: left; }
-    .form-group label { display: block; font-weight: bold; margin-bottom: 3px; font-size: 13px; }
-    .form-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 3px; box-sizing: border-box; font-size: 13px; }
+    .form-group label { display: block; font-weight: bold; margin-bottom: 3px; font-size: 13px; color: var(--text-dark); }
+    .form-group input { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 3px; box-sizing: border-box; font-size: 13px; background: var(--bg-light); color: var(--text-dark); }
     .btn-save { width: 100%; padding: 10px; background: #2ecc71; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
     .btn-delete { width: 100%; padding: 10px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; }
 
@@ -304,7 +336,6 @@ $result = mysqli_query($conn, $query);
 <div class="supplier-container">
     
     <div class="sup-header">
-        <h1 class="sup-title">Supplier List</h1>
         <button class="btn-add-sup" onclick="openSupModal('add')">
             <span>+</span> Add Supplier
         </button>
