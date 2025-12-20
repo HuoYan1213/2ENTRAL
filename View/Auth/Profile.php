@@ -53,6 +53,7 @@ if (!isset($_SESSION['user'])) {
 ?>
 
 <link href="../../Assets/CSS/profile.css" rel="stylesheet">
+<title>My Profile</title>
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
 <style>
     /* Fix for disabled inputs to respect Dark Mode */

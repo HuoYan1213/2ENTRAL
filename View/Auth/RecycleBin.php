@@ -35,6 +35,7 @@ function buildUrl($newPage, $currentFilters) {
 ?>
 
 <link rel="stylesheet" href="../../Assets/CSS/recyclebin.css">
+<title>Recycle Bin</title>
 <!-- Include Phosphor Icons -->
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
 <style>

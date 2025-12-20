@@ -92,6 +92,8 @@ if (isset($_GET['id'])) {
     }
 }
 ?>
+
+<title>Product Management</title>
 <style>
     /* Product-specific styles for dashboard integration */
     .product-content {
