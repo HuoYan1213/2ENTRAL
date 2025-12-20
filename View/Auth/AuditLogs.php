@@ -61,6 +61,8 @@
 
     // Helper to parse action type
     function getActionType($details) {
+        // Add Security Alert type (Red color using act-delete style)
+        if (stripos($details, 'Unauthorized') !== false) return ['type' => 'Security', 'class' => 'act-delete', 'icon' => 'ph-warning-circle'];
         if (stripos($details, 'Login') !== false) return ['type' => 'Login', 'class' => 'act-login', 'icon' => 'ph-sign-in'];
         if (stripos($details, 'Logout') !== false) return ['type' => 'Logout', 'class' => 'act-logout', 'icon' => 'ph-sign-out'];
         if (stripos($details, 'Create') !== false || stripos($details, 'Add') !== false) return ['type' => 'Created', 'class' => 'act-create', 'icon' => 'ph-plus-circle'];
@@ -76,6 +78,8 @@
 <link rel="stylesheet" href="../../Assets/CSS/auditlogs.css">
 
 <div class="audit-logs-wrapper">
+    
+    <div class="toast-container" id="toastContainer"></div>
     
     <!-- Header Section -->
     <div class="header-section">
@@ -110,6 +114,7 @@
                     <option value="Create" <?php echo ($action == 'Create') ? 'selected' : ''; ?>>Create</option>
                     <option value="Update" <?php echo ($action == 'Update') ? 'selected' : ''; ?>>Update</option>
                     <option value="Delete" <?php echo ($action == 'Delete') ? 'selected' : ''; ?>>Delete</option>
+                    <option value="Unauthorized" <?php echo ($action == 'Unauthorized') ? 'selected' : ''; ?>>Security Alert</option>
                 </select>
             </div>
 
@@ -143,7 +148,13 @@
             <tbody>
                 <?php if (!empty($logs)): ?>
                     <?php foreach ($logs as $l): 
-                        $userName = !empty($l['UserName']) ? $l['UserName'] : 'Unknown User';
+                        // Handle UserID 0 (Unregistered/System)
+                        if ($l['UserID'] == 0) {
+                            $userName = 'Unregistered';
+                        } else {
+                            $userName = !empty($l['UserName']) ? $l['UserName'] : 'Unknown User';
+                        }
+                        
                         $visuals = getUserVisuals($userName);
                         $actionInfo = getActionType($l['LogsDetails']);
                     ?>
@@ -221,11 +232,42 @@
 </div>
 
 <script>
+    function showToast(type, message) {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        
+        let iconClass = type === 'success' ? 'ph-check-circle' : 'ph-warning-circle';
+        let title = type === 'success' ? 'Success' : 'Error';
+
+        toast.innerHTML = `
+            <div class="toast-icon"><i class="ph-fill ${iconClass}"></i></div>
+            <div class="toast-content">
+                <h4>${title}</h4>
+                <p>${message}</p>
+            </div>
+            <div class="toast-close" onclick="this.parentElement.remove()"><i class="ph-bold ph-x"></i></div>
+        `;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.add('hiding');
+            toast.addEventListener('animationend', () => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            });
+        }, 3000);
+    }
+
     $(document).ready(function() {
         const auditLogsPath = '../../View/Auth/AuditLogs.php';
         
         // Handle Pagination Clicks via AJAX
-        $('.pagination-container .page-btn').on('click', function(e) {
+        $(document).off('click', '.audit-logs-wrapper .pagination-container .page-btn').on('click', '.audit-logs-wrapper .pagination-container .page-btn', function(e) {
             if ($(this).hasClass('disabled')) return false;
             e.preventDefault();
 
@@ -233,9 +275,28 @@
             $('#ajax-result').load(auditLogsPath + urlParams);
         });
 
+        // Initialize Choices.js for Select Dropdowns
+        $('select.filter-input').each(function() {
+            new Choices(this, {
+                searchEnabled: $(this).attr('name') === 'user', // Only enable search for User dropdown
+                itemSelectText: '',
+                shouldSort: false,
+                position: 'bottom'
+            });
+        });
+
         // Handle Filter Form Submit via AJAX
         $('.filter-form').on('submit', function(e) {
             e.preventDefault();
+            
+            const startDate = $('input[name="start"]').val();
+            const endDate = $('input[name="end"]').val();
+
+            if (startDate && endDate && startDate > endDate) {
+                showToast('error', "Invalid Date Range: 'From' date cannot be later than 'To' date.");
+                return;
+            }
+            
             const formData = $(this).serialize();
             const fullUrl = auditLogsPath + '?page=1&' + formData;
             $('#ajax-result').load(fullUrl);

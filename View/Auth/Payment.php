@@ -2,6 +2,8 @@
 session_start();
 ?>
 <div class="confirmation-container">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <div class="toast-container" id="toastContainer"></div>
     <style>
         .confirmation-container { display: flex; gap: 30px; padding: 20px; background: #fff; height: 100%; border-radius: 10px; }
         
@@ -80,6 +82,37 @@ session_start();
     let poData = JSON.parse(localStorage.getItem('userCart')) || [];
     let grandTotal = 0;
 
+    function showToast(type, message) {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        
+        let iconClass = type === 'success' ? 'ph-check-circle' : 'ph-warning-circle';
+        let title = type === 'success' ? 'Success' : 'Error';
+
+        toast.innerHTML = `
+            <div class="toast-icon"><i class="ph-fill ${iconClass}"></i></div>
+            <div class="toast-content">
+                <h4>${title}</h4>
+                <p>${message}</p>
+            </div>
+            <div class="toast-close" onclick="this.parentElement.remove()"><i class="ph-bold ph-x"></i></div>
+        `;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.add('hiding');
+            toast.addEventListener('animationend', () => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            });
+        }, 3000);
+    }
+
     // 2. Load Summary immediately
     const container = $('#paymentItems');
     container.empty();
@@ -133,12 +166,12 @@ session_start();
                 if (res.status === 'success') {
                     generatePOInvoice(res.orderID, orderData);
                 } else {
-                    alert("Error: " + res.message);
+                    showToast('error', "Error: " + res.message);
                     $('#confirmBtn').prop('disabled', false).text('Confirm Purchase Order');
                 }
             },
             error: function() {
-                alert("Server connection error");
+                showToast('error', "Server connection error");
                 $('#confirmBtn').prop('disabled', false).text('Confirm Purchase Order');
             }
         });

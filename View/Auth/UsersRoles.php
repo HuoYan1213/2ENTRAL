@@ -36,10 +36,38 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
 ?>
 
 <link rel="stylesheet" href="../../Assets/CSS/usersroles.css">
+<title>Users & Roles</title>
 <!-- Include Phosphor Icons -->
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
+<style>
+    /* Choices.js Overrides for UsersRoles */
+    .choices { flex-grow: 1; margin-bottom: 0; font-size: 0.9rem; }
+    .choices__inner {
+        min-height: auto; padding: 0 !important; border: none !important;
+        background-color: transparent !important; color: var(--text-dark);
+    }
+    .choices__list--dropdown {
+        background-color: var(--card-white); border: 1px solid var(--border);
+        color: var(--text-dark); margin-top: 10px; border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 50;
+    }
+    .choices__item--choice.is-highlighted { background-color: var(--bg-light); }
+    
+    /* Fix for filter group layout with Choices */
+    .filter-group {
+        display: flex; align-items: center; gap: 10px;
+        background: var(--card-white); border: 1px solid var(--border);
+        padding: 8px 12px; border-radius: 8px; min-width: 180px;
+    }
+    .choices__input { background-color: transparent !important; }
+    /* Dark mode text fix */
+    body.dark-mode .choices__input { color: #fff !important; }
+    body.dark-mode .choices__list--dropdown { background-color: #1E1E1E; border-color: #333; }
+</style>
 
 <div class="users-roles-wrapper">
+    <div class="toast-container" id="toastContainer"></div>
+
 
     <!-- Page Intro -->
     <div class="page-intro">
@@ -354,28 +382,117 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
     </div>
 </div>
 
-    <div id="confirmationModal" class="modal">
-        <div class="modal-content" style="max-width: 400px;">
-            <div class="modal-header">
-                <h3>Confirm Change</h3>
-                <span class="close" id="closeConfirmModal">&times;</span>
+    <div class="modal-overlay" id="confirmationModal">
+        <div class="modal-box">
+            <div class="modal-icon-large" id="confirmModalIconContainer">
+                <i class="ph-fill ph-question" id="confirmModalIcon"></i>
             </div>
-            <div class="modal-body">
-                <p id="confirmationMessage">Are you sure you want to make this change?</p>
-                <div class="form-actions">
-                    <button type="button" class="btn-cancel" id="cancelConfirm">Cancel</button>
-                    <button type="button" class="btn-save" id="confirmChange">Confirm</button>
-                </div>
+            <h3 class="modal-title" id="confirmModalTitle">Confirm Action</h3>
+            <p class="modal-desc" id="confirmModalDesc">Are you sure?</p>
+            
+            <div class="modal-actions">
+                <button class="modal-btn btn-cancel" onclick="closeConfirmModal()">Cancel</button>
+                <button class="modal-btn btn-confirm" id="confirmModalBtn" onclick="executePendingAction()">Confirm</button>
             </div>
         </div>
     </div>
 
     <script>
+    function showToast(type, message) {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        
+        let iconClass = type === 'success' ? 'ph-check-circle' : 'ph-warning-circle';
+        let title = type === 'success' ? 'Success' : 'Error';
+
+        toast.innerHTML = `
+            <div class="toast-icon"><i class="ph-fill ${iconClass}"></i></div>
+            <div class="toast-content">
+                <h4>${title}</h4>
+                <p>${message}</p>
+            </div>
+            <div class="toast-close" onclick="this.parentElement.remove()"><i class="ph-bold ph-x"></i></div>
+        `;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.add('hiding');
+            toast.addEventListener('animationend', () => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            });
+        }, 3000);
+    }
+
+    var pendingAction = null;
+
+    function showConfirmModal(type, title, message, callback) {
+        const modal = document.getElementById('confirmationModal');
+        const iconContainer = document.getElementById('confirmModalIconContainer');
+        const icon = document.getElementById('confirmModalIcon');
+        const titleEl = document.getElementById('confirmModalTitle');
+        const descEl = document.getElementById('confirmModalDesc');
+        const confirmBtn = document.getElementById('confirmModalBtn');
+
+        titleEl.textContent = title;
+        descEl.innerHTML = message;
+        
+        if (type === 'add' || type === 'save') {
+            icon.className = 'ph-fill ph-question';
+            iconContainer.style.background = 'rgba(2, 136, 209, 0.1)';
+            iconContainer.style.color = '#0288d1';
+            confirmBtn.style.background = 'var(--grad-blue)';
+            confirmBtn.textContent = 'Confirm';
+        } else if (type === 'status') {
+            icon.className = 'ph-fill ph-toggle-left';
+            iconContainer.style.background = 'rgba(245, 124, 0, 0.1)';
+            iconContainer.style.color = '#F57C00';
+            confirmBtn.style.background = 'linear-gradient(135deg, #ffb74d 0%, #ff9800 100%)';
+            confirmBtn.textContent = 'Confirm Change';
+        }
+
+        pendingAction = callback;
+        modal.classList.add('active');
+    }
+
+    function closeConfirmModal() {
+        const modal = document.getElementById('confirmationModal');
+        modal.classList.remove('active');
+        
+        // Revert checkbox if the action was cancelled
+        if (pendingChange && pendingChange.type === 'status' && pendingChange.checkbox) {
+            pendingChange.checkbox.prop('checked', pendingChange.originalValue === 'Active');
+        }
+        pendingAction = null;
+    }
+
+    function executePendingAction() {
+        if (pendingAction) {
+            pendingAction();
+        }
+        document.getElementById('confirmationModal').classList.remove('active');
+        pendingAction = null;
+    }
+
     $(document).ready(function() {
         const usersRolesPath = 'UsersRoles.php';
 
+        // Initialize Choices.js
+        $('select.filter-select').each(function() {
+            new Choices(this, {
+                searchEnabled: false,
+                itemSelectText: '',
+                shouldSort: false
+            });
+        });
+
         // Handle Pagination Clicks
-        $('.pagination-container .page-btn').on('click', function(e) {
+        $(document).off('click', '.users-roles-wrapper .pagination-container .page-btn').on('click', '.users-roles-wrapper .pagination-container .page-btn', function(e) {
             if ($(this).hasClass('disabled')) return false;
             e.preventDefault();
             const urlParams = $(this).attr('href');
@@ -383,7 +500,7 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
         });
 
         // Handle Filters
-        function reloadWithFilters(page = 1) {
+        function reloadWithFilters(page = 1, callback = null) {
             const search = $('#search-input').val();
             const role = $('#role-filter').val();
             const status = $('#status-filter').val();
@@ -395,7 +512,9 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
                 status: status
             });
             
-            $('#ajax-result').load(usersRolesPath + '?' + params.toString());
+            $('#ajax-result').load(usersRolesPath + '?' + params.toString(), function() {
+                if (typeof callback === 'function') callback();
+            });
         }
 
         let searchTimeout;
@@ -425,12 +544,12 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
             function handleFile(file) {
                 if (file) {
                     if (!file.type.match('image.*')) {
-                        alert('Please select an image file (JPEG, PNG, GIF, etc.)');
+                        showToast('error', 'Please select an image file (JPEG, PNG, GIF, etc.)');
                         avatarInput.value = '';
                         return false;
                     }
                     if (file.size > 2 * 1024 * 1024) {
-                        alert('Image size should be less than 2MB');
+                        showToast('error', 'Image size should be less than 2MB');
                         avatarInput.value = '';
                         return false;
                     }
@@ -538,10 +657,8 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
 
         $('#addUserForm').submit(function(e) {
             e.preventDefault();
-            
-            if (confirm("Are you sure you want to add this new user?")) {
-                addNewUser();
-            }
+            const userName = $('#addUserName').val();
+            showConfirmModal('add', 'Add New User?', `Are you sure you want to add <strong>${userName}</strong> to the system?`, addNewUser);
         });
 
         function addNewUser() {
@@ -562,17 +679,18 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
                     submitBtn.html(originalText).prop('disabled', false);
 
                     if (response && response.success) {
-                        alert('User added successfully!');
                         $('#addUserModal').hide();
-                        reloadWithFilters(1); // Reload current view
+                        reloadWithFilters(1, function() {
+                            showToast('success', 'User added successfully!');
+                        }); 
                     } else {
                         const errorMsg = response ? response.message : 'Unknown error occurred';
-                        alert('Failed to add user: ' + errorMsg);
+                        showToast('error', 'Failed to add user: ' + errorMsg);
                     }
                 },
                 error: function(xhr, status, error) {
                     submitBtn.html(originalText).prop('disabled', false);
-                    alert('Error adding user. Please check console for details.');
+                    showToast('error', 'Error adding user. Please check console for details.');
                 }
             });
         }
@@ -643,12 +761,12 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
                             }
                         }
                     } else {
-                        alert('Failed to load user information');
+                        showToast('error', 'Failed to load user information');
                         $('#editUserModal').hide();
                     }
                 },
                 error: function(xhr, status, error) {
-                    alert('Error loading user information.');
+                    showToast('error', 'Error loading user information.');
                     $('#editUserModal').hide();
                 }
             });
@@ -656,32 +774,19 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
         $('#closeEditModal, #cancelEdit').click(function() {
             $('#editUserModal').hide();
         });
-        $('#closeConfirmModal, #cancelConfirm').click(function() {
-            $('#confirmationModal').hide();
-            
-            // Revert checkbox if it was a status toggle
-            if (pendingChange.type === 'status' && pendingChange.checkbox) {
-                pendingChange.checkbox.prop('checked', pendingChange.originalValue === 'Active');
-            }
-        });
         $(window).click(function(event) {
             if ($(event.target).is('#editUserModal')) {
                 $('#editUserModal').hide();
             }
-            if ($(event.target).is('#confirmationModal')) {
-                $('#confirmationModal').hide();
-                if (pendingChange.type === 'status' && pendingChange.checkbox) {
-                    pendingChange.checkbox.prop('checked', pendingChange.originalValue === 'Active');
-                }
+            if ($(event.target).is('#confirmationModal.modal-overlay')) {
+                closeConfirmModal();
             }
         });
 
         $('#editUserForm').submit(function(e) {
             e.preventDefault();
-            
-            if (confirm("Are you sure you want to save these changes for the user?")) {
-                saveUserChanges();
-            }
+            const userName = $('#editUserName').val();
+            showConfirmModal('save', 'Save Changes?', `Are you sure you want to save changes for <strong>${userName}</strong>?`, saveUserChanges);
         });
 
         function saveUserChanges() {
@@ -713,7 +818,6 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
                     submitBtn.html(originalText).prop('disabled', false);
                     
                     if (response && response.success) {
-                        alert('User updated successfully!');
                         $('#editUserModal').hide();
 
                         const editedUserID = $('#editUserID').val();
@@ -729,15 +833,17 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
                             window.dispatchEvent(updateEvent);
                         }
 
-                        reloadWithFilters(<?php echo $current_page; ?>); // Reload current page
+                        reloadWithFilters(<?php echo $current_page; ?>, function() {
+                            showToast('success', 'User updated successfully!');
+                        }); 
                     } else {
                         const errorMsg = response ? response.message : 'Unknown error occurred';
-                        alert('Failed to update user: ' + errorMsg);
+                        showToast('error', 'Failed to update user: ' + errorMsg);
                     }
                 },
                 error: function(xhr, status, error) {
                     submitBtn.html(originalText).prop('disabled', false);
-                    alert('Error updating user. Please check console for details.');
+                    showToast('error', 'Error updating user. Please check console for details.');
                 }
             });
         }
@@ -761,23 +867,11 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
                 checkbox: $(this)
             };
             
-            $('#confirmationMessage').html(
-                `Are you sure you want to change <strong>${userName}</strong>'s status?<br><br>
-                <strong>To:</strong> ${newStatus}`
-            );
-            $('#confirmationModal').css('display', 'flex');
-        });
-        
-
-        $('#confirmChange').click(function() {
-            $('#confirmationModal').hide();
-            
-            if (pendingChange.type === 'status') {
-                updateUserStatus();
-            }
+            const message = `Are you sure you want to change <strong>${userName}</strong>'s status to <strong>${newStatus}</strong>?`;
+            showConfirmModal('status', 'Confirm Status Change', message, updateUserStatus);
         });
 
-        function updateUserStatus() {
+        function updateUserStatus() { // This will be called by executePendingAction
             const { userID, newValue, originalValue, checkbox } = pendingChange;
             
             $.ajax({
@@ -794,13 +888,13 @@ if ($latestImagePath !== ($_SESSION['user']['image'] ?? '')) {
                         $(`tr[data-userid="${userID}"]`).data('original-status', newValue);
                     } else {
                         const errorMsg = response ? response.message : 'Unknown error occurred';
-                        alert('Failed to update user status: ' + errorMsg);
+                        showToast('error', 'Failed to update user status: ' + errorMsg);
                         // Revert checkbox
                         if(checkbox) checkbox.prop('checked', originalValue === 'Active');
                     }
                 },
                 error: function(xhr, status, error) {
-                    alert('Error updating user status. Please try again.');
+                    showToast('error', 'Error updating user status. Please try again.');
                     // Revert checkbox
                     if(checkbox) checkbox.prop('checked', originalValue === 'Active');
                 }

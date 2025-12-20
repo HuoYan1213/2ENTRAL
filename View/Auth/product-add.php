@@ -123,9 +123,9 @@ if ($supplier_check_result->num_rows === 0) {
 }
 $supplier_check_stmt->close();
 
-// Generate sequential Product ID (format: 25STR00005, etc.)
-// Get the highest existing ProductID and increment
-$max_id_sql = "SELECT MAX(CAST(SUBSTRING(ProductID, 6) AS UNSIGNED)) as max_num FROM products WHERE ProductID LIKE '25STR%'";
+$year = date('y');
+$prefix = $year . 'SPO'; // Dynamically generate prefix (e.g., 25SPO)
+$max_id_sql = "SELECT MAX(CAST(SUBSTRING(ProductID, 6) AS UNSIGNED)) as max_num FROM products WHERE ProductID LIKE CONCAT(?, '%')";
 $max_id_stmt = $conn->prepare($max_id_sql);
 if (!$max_id_stmt) {
     error_log('DB Prepare Error (max_id): ' . $conn->error);
@@ -133,13 +133,14 @@ if (!$max_id_stmt) {
     exit;
 }
 
+$max_id_stmt->bind_param('s', $prefix);
 $max_id_stmt->execute();
 $max_id_result = $max_id_stmt->get_result();
 $max_id_row = $max_id_result->fetch_assoc();
 $max_id_stmt->close();
 
 $next_num = ($max_id_row['max_num'] ?? 4) + 1;
-$product_id = '25STR' . str_pad($next_num, 5, '0', STR_PAD_LEFT);
+$product_id = $prefix . str_pad($next_num, 5, '0', STR_PAD_LEFT);
 
 // Prepare insert statement
 $insert_sql = "INSERT INTO products (ProductID, ProductName, Description, Category, Stock, Price, LowStockAlert, ImagePath, SupplierID, IsActive) 

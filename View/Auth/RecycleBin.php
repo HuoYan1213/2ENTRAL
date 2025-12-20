@@ -37,8 +37,35 @@ function buildUrl($newPage, $currentFilters) {
 <link rel="stylesheet" href="../../Assets/CSS/recyclebin.css">
 <!-- Include Phosphor Icons -->
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
+<style>
+    /* Choices.js Overrides */
+    .choices { flex-grow: 1; margin-bottom: 0; font-size: 0.9rem; }
+    .choices__inner {
+        min-height: auto; padding: 0 !important; border: none !important;
+        background-color: transparent !important; color: var(--text-dark);
+    }
+    .choices__list--dropdown {
+        background-color: var(--card-white); border: 1px solid var(--border);
+        color: var(--text-dark); margin-top: 10px; border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 50;
+    }
+    .choices__item--choice.is-highlighted { background-color: var(--bg-light); }
+    .choices__input { background-color: transparent !important; }
+    
+    /* Fix for filter group layout */
+    .filter-group {
+        display: flex; align-items: center; gap: 10px;
+        background: var(--card-white); border: 1px solid var(--border);
+        padding: 8px 12px; border-radius: 8px; min-width: 180px;
+    }
+
+    /* Dark mode text fix */
+    body.dark-mode .choices__input { color: #fff !important; }
+    body.dark-mode .choices__list--dropdown { background-color: #1E1E1E; border-color: #333; }
+</style>
 
 <div class="recycle-bin-wrapper">
+    <div class="toast-container" id="toastContainer"></div>
 
     <!-- Toolbar -->
     <div class="toolbar">
@@ -180,22 +207,62 @@ function buildUrl($newPage, $currentFilters) {
 </div>
 
 <script>
+    function showToast(type, message) {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        
+        let iconClass = type === 'success' ? 'ph-check-circle' : 'ph-warning-circle';
+        let title = type === 'success' ? 'Success' : 'Error';
+
+        toast.innerHTML = `
+            <div class="toast-icon"><i class="ph-fill ${iconClass}"></i></div>
+            <div class="toast-content">
+                <h4>${title}</h4>
+                <p>${message}</p>
+            </div>
+            <div class="toast-close" onclick="this.parentElement.remove()"><i class="ph-bold ph-x"></i></div>
+        `;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.add('hiding');
+            toast.addEventListener('animationend', () => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            });
+        }, 3000);
+    }
+
 $(document).ready(function() {
     const recycleBinPath = 'RecycleBin.php';
     const controllerPath = '../../Controller/RecycleBinController.php';
 
     // --- Pagination & Filter Logic ---
-    $('.pagination-container .page-btn').on('click', function(e) {
+    $(document).off('click', '.recycle-bin-wrapper .pagination-container .page-btn').on('click', '.recycle-bin-wrapper .pagination-container .page-btn', function(e) {
         if ($(this).hasClass('disabled')) return false;
         e.preventDefault();
         $('#ajax-result').load(recycleBinPath + $(this).attr('href'));
     });
 
-    function reloadView() {
+    // Initialize Choices.js
+    new Choices('#type-filter', {
+        searchEnabled: false,
+        itemSelectText: '',
+        shouldSort: false
+    });
+
+    function reloadView(callback) {
         const search = $('#search-input').val();
         const type = $('#type-filter').val();
         const params = new URLSearchParams({ search: search, type: type });
-        $('#ajax-result').load(recycleBinPath + '?' + params.toString());
+        $('#ajax-result').load(recycleBinPath + '?' + params.toString(), function() {
+            if (typeof callback === 'function') callback();
+        });
     }
 
     let searchTimeout;
@@ -256,10 +323,11 @@ $(document).ready(function() {
                 data: { action_type: action, items: JSON.stringify(items) },
                 dataType: 'json',
                 success: function(res) {
-                    alert(res.message);
-                    reloadView();
+                    reloadView(function() {
+                        showToast(res.success ? 'success' : 'error', res.message);
+                    });
                 },
-                error: function() { alert('Server error occurred.'); }
+                error: function() { showToast('error', 'Server error occurred.'); }
             });
         });
     };
@@ -274,10 +342,10 @@ $(document).ready(function() {
                 if (res.success) {
                     reloadView();
                 } else {
-                    alert('Error: ' + res.message);
+                    showToast('error', res.message);
                 }
             },
-            error: function() { alert('Server error occurred.'); }
+            error: function() { showToast('error', 'Server error occurred.'); }
         });
     }
 

@@ -54,6 +54,17 @@ if (!isset($_SESSION['user'])) {
 
 <link href="../../Assets/CSS/profile.css" rel="stylesheet">
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
+<style>
+    /* Fix for disabled inputs to respect Dark Mode */
+    input:disabled {
+        background-color: rgba(0, 0, 0, 0.05);
+        color: var(--text-grey, #888);
+    }
+    body.dark-mode input:disabled {
+        background-color: rgba(255, 255, 255, 0.05);
+        color: var(--text-grey, #aaa);
+    }
+</style>
 
 <div class="toast-container" id="toastContainer"></div>
 <div class="modal-overlay" id="confirmModal">
@@ -133,7 +144,7 @@ if (!isset($_SESSION['user'])) {
                 </div>
                 <div class="form-group">
                     <label>User ID</label>
-                    <input type="text" value="<?= htmlspecialchars($CURRENT_ID) ?>" disabled style="background:#f9f9f9; color:#888;">
+                    <input type="text" value="<?= htmlspecialchars($CURRENT_ID) ?>" disabled>
                 </div>
                 <div class="form-group">
                     <label>Email Address</label>
@@ -141,7 +152,7 @@ if (!isset($_SESSION['user'])) {
                 </div>
                 <div class="form-group">
                     <label>Department</label>
-                    <input type="text" value="Logistics & Warehouse" disabled style="background:#f9f9f9; color:#888;">
+                    <input type="text" value="Logistics & Warehouse" disabled>
                 </div>
             </div>
 
@@ -199,7 +210,7 @@ function showToast(type, message) {
     }, 3000);
 }
 
-let pendingAction = null;
+var pendingAction = null;
 
 function showConfirmModal(type, title, message, actionCallback) {
     const modal = document.getElementById('confirmModal');

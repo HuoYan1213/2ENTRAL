@@ -70,7 +70,7 @@ class UserController {
         if (!isset($conn)) global $conn;
 
         $offset = ($page - 1) * $limit;
-        $where = "WHERE 1=1";
+        $where = "WHERE UserID != 0";
         $params = [];
         $types = "";
 
@@ -347,14 +347,18 @@ class UserController {
                 session_start();
             }
             
-            $logStmt = $conn->prepare("INSERT INTO inventory_logs (LogsDetails, ProductID, UserID) VALUES (?, ?, ?)");
-            if ($logStmt) {
-                $logDetails = "Edited user: " . $userName . " (ID: " . $userID . ")";
-                $validProductID = '25BAD00001'; 
-                $currentUserID = $_SESSION['user']['id'] ?? 1; 
-                $logStmt->bind_param("ssi", $logDetails, $validProductID, $currentUserID);
-                $logStmt->execute();
-                $logStmt->close();
+            try {
+                $logStmt = $conn->prepare("INSERT INTO inventory_logs (LogsDetails, ProductID, UserID) VALUES (?, ?, ?)");
+                if ($logStmt) {
+                    $logDetails = "Edited user: " . $userName . " (ID: " . $userID . ")";
+                    $validProductID = '2025DEF000'; // Fixed: Use correct default ProductID
+                    $currentUserID = $_SESSION['user']['id'] ?? 1; 
+                    $logStmt->bind_param("ssi", $logDetails, $validProductID, $currentUserID);
+                    $logStmt->execute();
+                    $logStmt->close();
+                }
+            } catch (Exception $e) {
+                error_log("Logging failed in editUser: " . $e->getMessage());
             }
 
             echo json_encode([
@@ -551,6 +555,16 @@ class UserController {
             exit();
         }
 
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        // Security: Only managers can add users
+        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== "Manager") {
+            echo json_encode(['success' => false, 'message' => 'Access Denied. Only Managers can add users.']);
+            exit();
+        }
+
         $userName = $_POST['userName'] ?? '';
         $email = $_POST['email'] ?? '';
         $role = $_POST['role'] ?? 'Employee';
@@ -623,15 +637,19 @@ class UserController {
                 $finalImagePath = $uploadPath;
             }
             
-            $logStmt = $conn->prepare("INSERT INTO inventory_logs (LogsDetails, ProductID, UserID) VALUES (?, ?, ?)");
-            if ($logStmt) {
-                $logDetails = "Added new user: " . $userName;
-                $validProductID = '25BAD00001'; 
-                if (session_status() == PHP_SESSION_NONE) { session_start(); }
-                $currentUserID = $_SESSION['user']['id'] ?? 1; 
-                $logStmt->bind_param("ssi", $logDetails, $validProductID, $currentUserID);
-                $logStmt->execute();
-                $logStmt->close();
+            try {
+                $logStmt = $conn->prepare("INSERT INTO inventory_logs (LogsDetails, ProductID, UserID) VALUES (?, ?, ?)");
+                if ($logStmt) {
+                    $logDetails = "Added new user: " . $userName;
+                    $validProductID = '2025DEF000'; // Fixed: Use correct default ProductID
+                    if (session_status() == PHP_SESSION_NONE) { session_start(); }
+                    $currentUserID = $_SESSION['user']['id'] ?? 1; 
+                    $logStmt->bind_param("ssi", $logDetails, $validProductID, $currentUserID);
+                    $logStmt->execute();
+                    $logStmt->close();
+                }
+            } catch (Exception $e) {
+                error_log("Logging failed in addUser: " . $e->getMessage());
             }
 
             echo json_encode(['success' => true, 'message' => 'User added successfully!']);

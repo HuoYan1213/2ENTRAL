@@ -10,21 +10,6 @@ else {
     require_once __DIR__ . "/../../Controller/UserController.php";
     require_once __DIR__ . "/../../Model/DB.php";
 
-    // Log Login Action (Once per session)
-    if (!isset($_SESSION['login_logged'])) {
-        $log_uid = $_SESSION['user']['id'];
-        $log_details = "User Login";
-        $defaultProductID = '2025DEF000'; // Default ProductID for system logs
-        
-        $stmt = $conn->prepare("INSERT INTO inventory_logs (UserID, LogsDetails, ProductID) VALUES (?, ?, ?)");
-        if ($stmt) {
-            $stmt->bind_param("iss", $log_uid, $log_details, $defaultProductID);
-            $stmt->execute();
-            $stmt->close();
-        }
-        $_SESSION['login_logged'] = true;
-    }
-
     $controller = new UserController();
     
     $latestImagePath = $controller->getUserAvatar($_SESSION['user']['id']);

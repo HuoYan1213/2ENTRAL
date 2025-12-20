@@ -71,11 +71,34 @@ class PublicController {
         $result = $stmt->get_result();
 
         if ($result->num_rows === 0) {
+            // Log unauthorized login attempt (User not found)
+            $log_uid = 0; // Use 0 for unknown user
+            $log_details = "Unauthorized Login Attempt (Unregistered): " . $email;
+            $defaultProductID = '2025DEF000';
+
+            try {
+                $logStmt = $conn->prepare("INSERT INTO inventory_logs (UserID, LogsDetails, ProductID) VALUES (?, ?, ?)");
+                if ($logStmt) {
+                    $logStmt->bind_param("iss", $log_uid, $log_details, $defaultProductID);
+                    $logStmt->execute();
+                    $logStmt->close();
+                }
+            } catch (Exception $e) {
+                // Prevent crash if UserID 0 does not exist in database
+                error_log("Failed to log unauthorized attempt: " . $e->getMessage());
+            }
+
             header('Location: /View/Public/AccessDenied.php');
             exit();
         }
 
         $row = $result->fetch_assoc();
+
+        // Prevent System/Placeholder Account (ID 0) from logging in
+        if ($row['UserID'] == 0) {
+            header("Location: /View/Public/AccessDenied.php");
+            exit();
+        }
 
         if ($row['IsActive'] === 'Inactive') {
             header("Location: /View/Public/AccessDenied.php");
@@ -90,6 +113,18 @@ class PublicController {
             'role' => $row['Role'],
             'avatar' => $row['ImagePath']
         ];
+
+        // Log Login Action immediately after successful authentication
+        $log_uid = $row['UserID'];
+        $log_details = "User Login";
+        $defaultProductID = '2025DEF000';
+
+        $logStmt = $conn->prepare("INSERT INTO inventory_logs (UserID, LogsDetails, ProductID) VALUES (?, ?, ?)");
+        if ($logStmt) {
+            $logStmt->bind_param("iss", $log_uid, $log_details, $defaultProductID);
+            $logStmt->execute();
+            $logStmt->close();
+        }
        
         header("Location: /View/Public/Loading.php");
         exit();

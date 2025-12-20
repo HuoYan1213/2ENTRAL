@@ -26,56 +26,101 @@ if ($supResult) {
 }
 ?>
 
+<title>Order Management</title>
+
 <div class="main-order-container">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <div class="toast-container" id="toastContainer"></div>
     <style>
+        .ajax-result {
+            padding: 0;
+        }
         /* --- GLOBAL & LAYOUT --- */
         .main-order-container * { box-sizing: border-box; }
-        .main-order-container { height: 100%; background: var(--bg-light); position: relative; overflow: hidden; }
+        .main-order-container { 
+            height: 100%; 
+            background: var(--bg-light); 
+            padding: 0;
+            position: relative; 
+        }
 
         /* --- VIEW 1: SUPPLIER SELECTION --- */
-        #view-suppliers { padding: 30px; text-align: center; height: 100%; overflow-y: auto; }
-        
-        .supplier-search-wrapper { display: flex; align-items: center; justify-content: center; gap: 15px; max-width: 500px; margin: 10px auto 30px auto; }
-        .search-input-container { position: relative; flex-grow: 1; }
-
-        .sup-search-input { width: 100%; padding: 12px 20px 12px 45px; font-size: 15px; border: 2px solid var(--border); border-radius: 50px; background: var(--card-white); color: var(--text-dark); outline: none; transition: all 0.3s ease; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .sup-search-input:focus { border-color: #3498db; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2); }
-        .search-icon-overlay { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #95a5a6; font-size: 16px; pointer-events: none; }
-
-        .btn-history-trigger { width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--border); background: var(--card-white); color: var(--text-dark); font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.05); transition: 0.3s; display: flex; align-items: center; justify-content: center; }
-        .btn-history-trigger:hover { background: #3498db; color: white; border-color: #3498db; transform: rotate(30deg); }
-
-        .supplier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 25px; margin-top: 20px; padding-bottom: 50px; }
-        .supplier-card { background: var(--card-white); border-radius: 12px; padding: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; transition: 0.3s; border: 2px solid transparent; display: flex; flex-direction: column; align-items: center; }
-        .supplier-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-color: #3498db; }
+        #view-suppliers { text-align: center; height: 100%;}
+        .supplier-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 25px; margin-top: 20px; padding-bottom: 50px;
+        }
+        .supplier-card {
+            background: var(--card-white); border-radius: 12px; padding: 25px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; transition: 0.3s;
+            border: 2px solid transparent; display: flex; flex-direction: column; align-items: center;
+        }
+        .supplier-card:hover {
+            transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-color: #3498db;
+        }
         .supplier-card img { width: 100px; height: 100px; object-fit: contain; margin-bottom: 15px; }
         .sup-name { font-size: 1.1rem; font-weight: bold; color: var(--text-dark); margin-bottom: 5px; }
         .sup-contact { font-size: 0.9rem; color: var(--text-grey); }
 
         /* --- VIEW 2: PRODUCT ORDERING --- */
-        #view-products { display: none; height: 100%; display: flex; flex-direction: column; }
+        #view-products { display: none; height: 100%; flex-direction: column; }
         .order-layout-wrapper { display: flex; width: 100%; height: 100%; gap: 20px; overflow: hidden; }
         
+        /* LEFT: PRODUCTS LIST */
         .product-section { flex: 7; display: flex; flex-direction: column; gap: 15px; height: 100%; overflow: hidden; }
-        .top-bar { flex-shrink: 0; display: flex; align-items: center; gap: 15px; background: var(--card-white); padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .product-list { flex-grow: 1; overflow-y: auto; min-height: 0; padding-right: 5px; display: flex; flex-direction: column; gap: 10px; }
+        
+        .top-bar { 
+            flex-shrink: 0; display: flex; align-items: center; gap: 15px; 
+            background: var(--card-white); padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+        }
 
-        .product-card { background: var(--card-white); border-radius: 10px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; flex-direction: row; align-items: center; border-left: 5px solid #3498db; gap: 20px; transition: 0.2s; }
+        /* CHANGED: List View for Rectangles */
+        .product-list { 
+            flex-grow: 1; overflow-y: auto; min-height: 0; padding-right: 5px; 
+            display: flex; flex-direction: column; gap: 10px; /* Stack items vertically */
+        }
+
+        /* CHANGED: Horizontal Card Styling */
+        .product-card { 
+            background: var(--card-white); border-radius: 10px; padding: 15px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+            display: flex; flex-direction: row; align-items: center; /* Horizontal alignment */
+            border-left: 5px solid #3498db; /* Accent on left */
+            gap: 20px;
+            transition: 0.2s;
+        }
         .product-card:hover { transform: translateX(5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .product-card img { width: 70px; height: 70px; object-fit: contain; flex-shrink: 0; }
+
+        .product-card img { 
+            width: 70px; height: 70px; object-fit: contain; flex-shrink: 0; 
+        }
+
+        /* Middle Info Section */
         .card-info { flex: 1; text-align: left; }
         .p-name { font-weight: bold; font-size: 1rem; color: var(--text-dark); margin-bottom: 4px; }
         .p-meta { font-size: 0.85rem; color: var(--text-grey); display: flex; gap: 15px; }
         .stock-tag { font-weight: bold; padding: 2px 6px; border-radius: 4px; background: var(--bg-light); }
-        .good-stock { color: #2ecc71; } .low-stock { color: #e74c3c; }
+        .good-stock { color: #2ecc71; }
+        .low-stock { color: #e74c3c; }
         .p-price { font-weight: bold; color: #2980b9; }
 
-        .action-group { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
+        /* Right Action Section */
+        .action-group { 
+            display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; 
+        }
         .qty-input-field { width: 70px; padding: 5px; border: 1px solid var(--border); border-radius: 5px; text-align: center; background: var(--bg-light); color: var(--text-dark); }
-        .btn-add { background: #34495e; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 0.9rem; }
+        .btn-add { 
+            background: #34495e; color: white; border: none; padding: 8px 15px; 
+            border-radius: 5px; cursor: pointer; font-size: 0.9rem;
+        }
         .btn-add:hover { background: #2c3e50; }
 
-        .cart-section { flex: 3; background: var(--card-white); border-radius: 15px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 5px 15px rgba(0,0,0,0.05); height: 100%; border-top: 5px solid #2ecc71; overflow: hidden; }
+        /* RIGHT: CART (Unchanged logic, kept styles) */
+        .cart-section { 
+            flex: 3; background: var(--card-white); border-radius: 15px; padding: 20px; 
+            display: flex; flex-direction: column; box-shadow: 0 5px 15px rgba(0,0,0,0.05); 
+            height: 100%; border-top: 5px solid #2ecc71; overflow: hidden; 
+        }
         .cart-header { flex-shrink: 0; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid var(--border); padding-bottom: 10px; color: var(--text-dark); }
         .cart-items { flex: 1; overflow-y: auto; margin-bottom: 15px; min-height: 0; }
         .cart-footer { flex-shrink: 0; border-top: 2px solid var(--border); padding-top: 15px; background: var(--card-white); }
@@ -90,28 +135,49 @@ if ($supResult) {
         .btn-back-sup { padding: 8px 15px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;}
         .search-input { padding: 8px; border: 1px solid var(--border); border-radius: 5px; width: 220px; background: var(--bg-light); color: var(--text-dark); }
         
-        /* Modal Container (Overlay) */
-        #historyModalContainer {
-            display: none; 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 1000;
-            justify-content: center; align-items: center;
-            backdrop-filter: blur(2px);
+        /* --- NEW: SUPPLIER SEARCH DESIGN --- */
+        .supplier-search-wrapper {
+            position: relative;
+            max-width: 400px;         /* Limits width for better aesthetic */
+            margin: 10px auto 30px auto; /* Centers the box + adds spacing below */
         }
+
+        .sup-search-input {
+            width: 100%;
+            padding: 12px 20px 12px 45px; /* Extra left padding for the icon */
+            font-size: 15px;
+            border: 2px solid var(--border);
+            border-radius: 50px;      /* Pill/Rounded shape */
+            background: var(--card-white);
+            color: var(--text-dark);
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); /* Subtle shadow */
+        }
+
+        .sup-search-input:focus {
+            border-color: #3498db;    /* Blue border on focus */
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2); /* Blue glow */
+        }
+
+        .search-icon-overlay {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #95a5a6;
+            font-size: 16px;
+            pointer-events: none;     /* Ensures you can click 'through' the icon */
+        }
+    
     </style>
 
     <div id="view-suppliers">
         <h2 style="color: var(--text-dark);">Select Supplier</h2>
         <div class="supplier-search-wrapper">
-            <div class="search-input-container">
-                <i class="fa-solid fa-magnifying-glass search-icon-overlay"></i>
-                <input type="text" id="searchSupplier" class="sup-search-input" placeholder="Search Company Name...">
-            </div>
-            <button class="btn-history-trigger" id="btnOpenHistory" title="View Order History">
-                <i class="fa-solid fa-clock-rotate-left"></i>
-            </button>
+            <i class="fa-solid fa-magnifying-glass search-icon-overlay"></i>
+            <input type="text" id="searchSupplier" class="sup-search-input" placeholder="Search Company Name...">
         </div>
-
         <div class="supplier-grid">
             <?php foreach($suppliers as $sup): ?>
                 <div class="supplier-card" onclick="selectSupplier('<?php echo $sup['SupplierID']; ?>', '<?php echo htmlspecialchars($sup['SupplierName']); ?>')">
@@ -123,7 +189,7 @@ if ($supResult) {
         </div>
     </div>
 
-    <div id="view-products">
+    <div id="view-products"> <?php  // View Product 1 ?>
         <div class="order-layout-wrapper">
             <div class="product-section">
                 <div class="top-bar">
@@ -138,15 +204,25 @@ if ($supResult) {
                     <?php foreach ($products as $prod): 
                         $stockClass = ($prod['Stock'] < 10) ? 'low-stock' : 'good-stock';
                     ?>
-                        <div class="product-card" data-supplier-id="<?php echo $prod['SupplierID']; ?>" data-id="<?php echo $prod['ProductID']; ?>" data-name="<?php echo htmlspecialchars($prod['ProductName']); ?>" data-price="<?php echo $prod['Price']; ?>">
-                            <img src="../../Assets/Image/Product/<?php echo $prod['ImagePath']; ?>" alt="Product" onerror="this.onerror=null; this.src='../../Assets/Image/Product/default-product.png';">                            
+                        <div class="product-card" 
+                             data-supplier-id="<?php echo $prod['SupplierID']; ?>"
+                             data-id="<?php echo $prod['ProductID']; ?>" 
+                             data-name="<?php echo htmlspecialchars($prod['ProductName']); ?>"
+                             data-price="<?php echo $prod['Price']; ?>">
+                            
+                            <img src="../../Assets/Image/Product/<?php echo $prod['ImagePath']; ?>" 
+                                alt="Product" 
+                                onerror="this.onerror=null; this.src='../../Assets/Image/Product/default-product.png';">                            
                             <div class="card-info">
                                 <div class="p-name"><?php echo htmlspecialchars($prod['ProductName']); ?></div>
                                 <div class="p-meta">
-                                    <span class="stock-tag <?php echo $stockClass; ?>">Stock: <?php echo $prod['Stock']; ?></span>
+                                    <span class="stock-tag <?php echo $stockClass; ?>">
+                                        Stock: <?php echo $prod['Stock']; ?>
+                                    </span>
                                     <span class="p-price">Cost: RM <?php echo $prod['Price']; ?></span>
                                 </div>
                             </div>
+                            
                             <div class="action-group">
                                 <input type="number" class="qty-input-field" id="qty_input_<?php echo $prod['ProductID']; ?>" value="10" min="1">
                                 <button class="btn-add order-add-btn" data-id="<?php echo $prod['ProductID']; ?>">Restock</button>
@@ -157,36 +233,90 @@ if ($supResult) {
             </div>
 
             <div class="cart-section">
-                <div class="cart-header"><i class="fa-solid fa-clipboard-list"></i> Order Draft</div>
-                <div class="cart-items" id="cartItems"><div style="text-align: center; color: #aaa; margin-top: 50px;">Draft is empty</div></div>
+                <div class="cart-header">
+                    <i class="fa-solid fa-clipboard-list"></i> Order Draft
+                </div>
+                
+                <div class="cart-items" id="cartItems">
+                    <div style="text-align: center; color: #aaa; margin-top: 50px;">Draft is empty</div>
+                </div>
+                
                 <div class="cart-footer">
-                    <div class="total-row"><span>Est. Cost:</span><span id="cartTotal">RM 0.00</span></div>
-                    <button class="btn-checkout" id="checkoutBtn" disabled>Review & Confirm <i class="fa-solid fa-arrow-right"></i></button>
+                    <div class="total-row">
+                        <span>Est. Cost:</span>
+                        <span id="cartTotal">RM 0.00</span>
+                    </div>
+                    <button class="btn-checkout" id="checkoutBtn" disabled>
+                        Review & Confirm <i class="fa-solid fa-arrow-right"></i>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
-
-    <div id="historyModalContainer" onclick="closeHistoryModal()"></div>
-
 </div>
 
 <script>
 (function() {
+    // 1. CHANGED: Try to load existing data from LocalStorage immediately
     let poDraft = JSON.parse(localStorage.getItem('userCart')) || []; 
     let currentSupplierID = null; 
     const allProducts = <?php echo json_encode($products); ?>;
 
+    function showToast(type, message) {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        
+        let iconClass = type === 'success' ? 'ph-check-circle' : 'ph-warning-circle';
+        let title = type === 'success' ? 'Success' : 'Error';
+
+        toast.innerHTML = `
+            <div class="toast-icon"><i class="ph-fill ${iconClass}"></i></div>
+            <div class="toast-content">
+                <h4>${title}</h4>
+                <p>${message}</p>
+            </div>
+            <div class="toast-close" onclick="this.parentElement.remove()"><i class="ph-bold ph-x"></i></div>
+        `;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.add('hiding');
+            toast.addEventListener('animationend', () => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            });
+        }, 3000);
+    }
+
+    // --- NEW: RESTORE STATE ON LOAD ---
+    // If we have items in the cart, we must skip the "Select Supplier" screen
+    // and go straight to the product view for that supplier.
     if (poDraft.length > 0) {
+        // Get the supplier info from the first item in the draft
         currentSupplierID = poDraft[0].supplierId;
         let savedSupplierName = poDraft[0].supplierName;
+
+        // Update the Top Bar UI
         $('#activeSupplierDisplay').html(`<i class="fa-solid fa-truck-field"></i> ${savedSupplierName}`);
+        
+        // Switch Views immediately
         $('#view-suppliers').hide();
         $('#view-products').css('display', 'flex');
+        
+        // Render the saved items
         renderDraft();
+        
+        // Filter the grid to show products for this supplier
+        // (We use setTimeout to ensure the DOM elements are fully ready)
         setTimeout(filterProductGrid, 50);
     }
 
+    // --- VIEW SWITCHING ---
     window.selectSupplier = function(id, name) {
         currentSupplierID = id;
         $('#activeSupplierDisplay').html(`<i class="fa-solid fa-truck-field"></i> ${name}`);
@@ -197,19 +327,24 @@ if ($supResult) {
 
     $('#btnChangeSupplier').on('click', function() {
         if (poDraft.length > 0 && !confirm("Changing supplier will clear your current draft. Continue?")) return;
+        
+        // Clear data
         poDraft = [];
         currentSupplierID = null;
-        localStorage.removeItem('userCart'); 
+        localStorage.removeItem('userCart'); // Clear storage too
+        
         renderDraft();
         $('#view-products').hide();
         $('#view-suppliers').fadeIn(200);
     });
 
+    // --- FILTERING ---
     function filterProductGrid() {
         let searchVal = $('#searchProduct').val().toLowerCase();
         $('.product-card').each(function() {
             let cardSupID = $(this).data('supplier-id');
             let cardName = $(this).data('name').toLowerCase();
+            // Match Supplier ID AND Search Text
             if (cardSupID == currentSupplierID && cardName.indexOf(searchVal) > -1) {
                 $(this).show();
             } else {
@@ -219,130 +354,115 @@ if ($supResult) {
     }
     $(document).on('keyup', '#searchProduct', function() { filterProductGrid(); });
 
+    // --- CART LOGIC ---
     window.addToPO = function(id, amount) {
         const product = allProducts.find(p => p.ProductID === id);
         const existingItem = poDraft.find(item => item.id === id);
         amount = parseInt(amount);
-        if (isNaN(amount) || amount <= 0) { alert("Invalid quantity"); return; }
-        if (existingItem) { existingItem.qty += amount; } 
-        else {
+        if (isNaN(amount) || amount <= 0) { showToast('error', "Invalid quantity"); return; }
+
+        if (existingItem) {
+            existingItem.qty += amount;
+        } else {
             poDraft.push({
-                id: product.ProductID, name: product.ProductName,
-                price: parseFloat(product.Price), qty: amount,
-                supplierId: product.SupplierID, supplierName: product.SupplierName
+                id: product.ProductID,
+                name: product.ProductName,
+                price: parseFloat(product.Price),
+                qty: amount,
+                supplierId: product.SupplierID,
+                supplierName: product.SupplierName
             });
         }
-        renderDraft(); saveToStorage(); 
+        renderDraft();
+        saveToStorage(); // Save on every change
     };
 
     window.updatePOQty = function(id, change) {
         const item = poDraft.find(i => i.id === id);
         if (!item) return;
         const newQty = item.qty + change;
-        if (newQty > 0) item.qty = newQty; else removeFromPO(id);
-        renderDraft(); saveToStorage(); 
+        if (newQty > 0) item.qty = newQty;
+        else removeFromPO(id);
+        renderDraft();
+        saveToStorage(); // Save on every change
     };
 
     window.removeFromPO = function(id) {
         poDraft = poDraft.filter(item => item.id !== id);
-        renderDraft(); saveToStorage(); 
+        renderDraft();
+        saveToStorage(); // Save on every change
     };
 
-    function saveToStorage() { localStorage.setItem('userCart', JSON.stringify(poDraft)); }
-
-    function renderDraft() {
-        const container = $('#cartItems'); container.empty(); let total = 0;
-        if (poDraft.length === 0) {
-            container.html('<div style="text-align: center; color: #aaa; margin-top: 50px;">Draft is empty</div>');
-            $('#checkoutBtn').prop('disabled', true); $('#cartTotal').text('RM 0.00'); return;
-        }
-        poDraft.forEach(item => {
-            total += item.price * item.qty;
-            container.append(`
-                <div class="cart-item">
-                    <div style="flex:1"><div style="font-weight:bold;">${item.name}</div><div style="color:#777; font-size:0.8rem;">RM ${item.price.toFixed(2)} x ${item.qty}</div></div>
-                    <div class="cart-controls"><button class="qty-btn" onclick="updatePOQty('${item.id}', -1)">-</button><span style="width:25px; text-align:center; font-weight:bold;">${item.qty}</span><button class="qty-btn" onclick="updatePOQty('${item.id}', 1)">+</button><i class="fa-solid fa-trash remove-btn" onclick="removeFromPO('${item.id}')"></i></div>
-                </div>`);
-        });
-        $('#cartTotal').text('RM ' + total.toFixed(2)); $('#checkoutBtn').prop('disabled', false);
+    // Helper to save state
+    function saveToStorage() {
+        localStorage.setItem('userCart', JSON.stringify(poDraft));
     }
 
+    function renderDraft() {
+        const container = $('#cartItems');
+        container.empty();
+        let total = 0;
+
+        if (poDraft.length === 0) {
+            container.html('<div style="text-align: center; color: #aaa; margin-top: 50px;">Draft is empty</div>');
+            $('#checkoutBtn').prop('disabled', true);
+            $('#cartTotal').text('RM 0.00');
+            return;
+        }
+
+        poDraft.forEach(item => {
+            const lineTotal = item.price * item.qty;
+            total += lineTotal;
+            container.append(`
+                <div class="cart-item">
+                    <div style="flex:1">
+                        <div style="font-weight:bold;">${item.name}</div>
+                        <div style="color:#777; font-size:0.8rem;">RM ${item.price.toFixed(2)} x ${item.qty}</div>
+                    </div>
+                    <div class="cart-controls">
+                        <button class="qty-btn" onclick="updatePOQty('${item.id}', -1)">-</button>
+                        <span style="width:25px; text-align:center; font-weight:bold;">${item.qty}</span>
+                        <button class="qty-btn" onclick="updatePOQty('${item.id}', 1)">+</button>
+                        <i class="fa-solid fa-trash remove-btn" onclick="removeFromPO('${item.id}')"></i>
+                    </div>
+                </div>
+            `);
+        });
+
+        $('#cartTotal').text('RM ' + total.toFixed(2));
+        $('#checkoutBtn').prop('disabled', false);
+    }
+
+    // --- EVENTS ---
     $(document).off('click', '.order-add-btn').on('click', '.order-add-btn', function() {
-        let id = $(this).data('id'); let inputVal = $('#qty_input_' + id).val();
-        window.addToPO(id, inputVal); $('#qty_input_' + id).val(10);
+        let id = $(this).data('id');
+        let inputVal = $('#qty_input_' + id).val();
+        window.addToPO(id, inputVal);
+        $('#qty_input_' + id).val(10);
     });
 
-    $('#checkoutBtn').on('click', function() { saveToStorage(); $('#ajax-result').load('Payment.php'); });
+    $('#checkoutBtn').on('click', function() {
+        saveToStorage(); // Ensure saved before navigating
+        $('#ajax-result').load('Payment.php'); 
+    });
 
-    if(currentSupplierID) { filterProductGrid(); }
+    // Run filter initially in case we restored state
+    if(currentSupplierID) {
+        filterProductGrid();
+    }
 
+    //Search filter
     $('#searchSupplier').on('keyup', function() {
         var value = $(this).val().toLowerCase();
+        
+        // Loop through all supplier cards
         $('.supplier-card').filter(function() {
+            // Find the name inside the card
             var supName = $(this).find('.sup-name').text().toLowerCase();
+            // Show if it matches, Hide if it doesn't
             $(this).toggle(supName.indexOf(value) > -1);
         });
     });
-
-    // --- UPDATED: LOAD HISTORY MODAL VIA AJAX ---
-    $('#btnOpenHistory').on('click', function() {
-        $('#historyModalContainer').load('OrderHistoryModal.php', function() {
-            $('#historyModalContainer').css('display', 'flex').hide().fadeIn(200);
-        });
-    });
-
-    // Function to close modal (called by button inside loaded content or overlay click)
-    window.closeHistoryModal = function() {
-        $('#historyModalContainer').fadeOut(200);
-    };
-
-    // Dummy Action Functions
-    // 1. Open the History List (Initial Load)
-    $('#btnOpenHistory').on('click', function() {
-        loadHistoryList();
-    });
-
-    // 2. Function to Load the List (Used by button and "Back" action)
-    window.loadHistoryList = function() {
-        $('#historyModalContainer').load('OrderHistoryModal.php', function() {
-            $('#historyModalContainer').css('display', 'flex').hide().fadeIn(200);
-        });
-    };
-
-    // 3. Function to View Details (Called by the "Eye" button in the list)
-    window.viewOrderHistory = function(purchaseID) {
-        // Load the details file and pass the ID
-        $('#historyModalContainer').load('OrderDetailsModal.php?id=' + purchaseID);
-    };
-
-    // 4. Close Modal
-    $('#historyModalContainer').on('click', function(e) {
-        if (e.target === this) {
-            closeHistoryModal();
-        }
-    });
-
-    window.closeHistoryModal = function() {
-        $('#historyModalContainer').fadeOut(200);
-    };
-
-    // Keep Print dummy for now (or implement similarly)
-    window.printOrderHistory = function(id) {
-        alert("Printing functionality would go here for PO #" + id);
-    };
-    window.printOrderHistory = function(id) {
-        // Open the PHP file in a new popup window
-        const width = 900;
-        const height = 700;
-        const left = (screen.width - width) / 2;
-        const top = (screen.height - height) / 2;
-        
-        window.open(
-            'PrintInvoice.php?id=' + id, 
-            'PrintInvoice', 
-            `width=${width},height=${height},top=${top},left=${left},scrollbars=yes`
-        );
-    };
 
 })();
 </script>

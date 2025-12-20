@@ -212,3 +212,43 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
     .search-group, .filter-group, .btn-add-user { width: 100%; }
     .user-info-cell { flex-direction: column; align-items: flex-start; gap: 5px; }
 }
+
+/* === Confirmation Modal (New Design) === */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(26, 37, 48, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: none;
+    justify-content: center; align-items: center;
+    transition: all 0.3s;
+}
+.modal-overlay.active { display: flex; }
+
+.modal-box {
+    background: var(--card-white);
+    width: 90%; max-width: 420px;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    padding: 32px;
+    text-align: center;
+    transform: scale(0.9); opacity: 0;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.modal-overlay.active .modal-box { transform: scale(1); opacity: 1; }
+
+.modal-icon-large {
+    width: 64px; height: 64px; border-radius: 50%;
+    font-size: 32px;
+    display: flex; justify-content: center; align-items: center;
+    margin: 0 auto 20px;
+}
+.modal-title { font-family: 'Kanit', sans-serif; font-size: 1.5rem; margin-bottom: 8px; color: var(--text-dark); }
+.modal-desc { font-size: 0.9rem; color: var(--text-grey); margin-bottom: 32px; line-height: 1.5; }
+
+.modal-actions { display: flex; gap: 12px; }
+.modal-btn { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-family: 'Inter'; }
+.btn-confirm { color: white; }
+.btn-cancel { background: var(--bg-light); border: 1px solid var(--border); color: var(--text-grey); }
+.btn-cancel:hover { background: var(--border); }
+body.dark-mode .btn-cancel { background: #333; border-color: #555; color: #eee; }
