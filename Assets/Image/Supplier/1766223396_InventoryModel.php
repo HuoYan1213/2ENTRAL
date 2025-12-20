@@ -48,11 +48,6 @@ class InventoryModel {
     }
 
     public function adjustStock($productId, $quantity, $reason, $userId) {
-        if ($quantity > 1000) {
-            error_log("Attempt to add excessive stock: $quantity");
-            return false;
-        }
-        
         $this->conn->begin_transaction();
 
         try {

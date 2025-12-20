@@ -24,11 +24,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         $imagePath = "default.jpg"; 
 
+        // --- NEW: Validation Settings ---
+        $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
+        $maxSize = 2 * 1024 * 1024; // 2MB
+
         if (!empty($_FILES['supplier_image']['name'])) {
+            // 1. Check File Size
+            if ($_FILES['supplier_image']['size'] > $maxSize) {
+                echo "error_size";
+                exit();
+            }
+
+            // 2. Check File Type
+            $fileExt = strtolower(pathinfo($_FILES["supplier_image"]["name"], PATHINFO_EXTENSION));
+            if (!in_array($fileExt, $allowedTypes)) {
+                echo "error_type";
+                exit();
+            }
+
+            // 3. Upload File
             $targetDir = "../../Assets/Image/Supplier/";
             $fileName = time() . "_" . basename($_FILES["supplier_image"]["name"]);
             if(move_uploaded_file($_FILES["supplier_image"]["tmp_name"], $targetDir . $fileName)){
                 $imagePath = $fileName;
+            } else {
+                echo "Error: Upload failed.";
+                exit();
             }
         }
         $sql = "INSERT INTO suppliers (SupplierName, Email, ImagePath, IsActive) VALUES ('$name', '$email', '$imagePath', 'Active')";
@@ -63,11 +84,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         $imageUpdateSQL = "";
+        
+        // --- NEW: Validation Settings ---
+        $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
+        $maxSize = 2 * 1024 * 1024; // 2MB
+
         if (!empty($_FILES['supplier_image']['name'])) {
+             // 1. Check File Size
+             if ($_FILES['supplier_image']['size'] > $maxSize) {
+                echo "error_size";
+                exit();
+            }
+
+            // 2. Check File Type
+            $fileExt = strtolower(pathinfo($_FILES["supplier_image"]["name"], PATHINFO_EXTENSION));
+            if (!in_array($fileExt, $allowedTypes)) {
+                echo "error_type";
+                exit();
+            }
+
+            // 3. Upload File
             $targetDir = "../../Assets/Image/Supplier/";
             $fileName = time() . "_" . basename($_FILES["supplier_image"]["name"]);
             if(move_uploaded_file($_FILES["supplier_image"]["tmp_name"], $targetDir . $fileName)){
                 $imageUpdateSQL = ", ImagePath = '$fileName'";
+            } else {
+                echo "Error: Upload failed.";
+                exit();
             }
         }
         $sql = "UPDATE suppliers SET SupplierName='$name', Email='$email' $imageUpdateSQL WHERE SupplierID=$id";
@@ -114,18 +157,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 // --- 2. PAGINATION LOGIC ---
 // Set limit to 6 suppliers per page (2 rows of 3)
-$limit = 6; 
+// --- 2. PAGINATION & SEARCH LOGIC ---
+$limit = 8; 
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $start = ($page - 1) * $limit;
 
-// Count
-$countQuery = "SELECT COUNT(*) AS total FROM suppliers WHERE IsActive = 'Active'";
+// Capture the search term
+$search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : '';
+$searchParam = $search ? "&search=$search" : ""; // String to append to pagination links
+
+// Build the WHERE clause
+$whereSQL = "IsActive = 'Active'";
+if (!empty($search)) {
+    $whereSQL .= " AND SupplierName LIKE '%$search%'";
+}
+
+// 1. Count Total (with Search)
+$countQuery = "SELECT COUNT(*) AS total FROM suppliers WHERE $whereSQL";
 $countResult = mysqli_query($conn, $countQuery);
 $totalSuppliers = mysqli_fetch_assoc($countResult)['total'];
 $totalPages = ceil($totalSuppliers / $limit);
 
-// Fetch
-$query = "SELECT * FROM suppliers WHERE IsActive = 'Active' ORDER BY SupplierID ASC LIMIT $start, $limit";
+// 2. Fetch Data (with Search)
+$query = "SELECT * FROM suppliers WHERE $whereSQL ORDER BY SupplierID ASC LIMIT $start, $limit";
 $result = mysqli_query($conn, $query);
 ?>
 
@@ -304,6 +358,42 @@ $result = mysqli_query($conn, $query);
         position: relative;
     }
 
+    /* --- SEARCH BAR DESIGN --- */
+    .supplier-search-wrapper {
+        position: relative;
+        width: 100%;
+        max-width: 400px;
+        margin: 0 20px; /* Spacing from sides if needed */
+    }
+
+    .sup-search-input {
+        width: 100%;
+        padding: 10px 20px 10px 40px; /* Left padding for icon */
+        font-size: 14px;
+        border: 2px solid var(--border);
+        border-radius: 50px; /* Pill shape */
+        background: var(--bg-light);
+        color: var(--text-dark);
+        outline: none;
+        transition: all 0.3s ease;
+    }
+
+    .sup-search-input:focus {
+        border-color: #3498db;
+        box-shadow: 0 4px 10px rgba(52, 152, 219, 0.2);
+        background: white;
+    }
+
+    .search-icon-overlay {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #95a5a6;
+        font-size: 14px;
+        pointer-events: none;
+    }
+
     /* Detail Modal Specific Style (Wider) */
     #detailModalContent {
         background-color: var(--card-white); 
@@ -336,6 +426,14 @@ $result = mysqli_query($conn, $query);
 <div class="supplier-container">
     
     <div class="sup-header">
+        <div class="supplier-search-wrapper">
+            <i class="fa-solid fa-magnifying-glass search-icon-overlay"></i>
+            <input type="text" 
+                id="searchSupplierInput" 
+                class="sup-search-input" 
+                placeholder="Search Supplier Name..." 
+                value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">        
+        </div>
         <button class="btn-add-sup" onclick="openSupModal('add')">
             <span>+</span> Add Supplier
         </button>
@@ -367,20 +465,30 @@ $result = mysqli_query($conn, $query);
     </div>
 
     <div class="pagination">
-        <?php if ($page > 1): ?>
-            <a href="Supplier.php?page=<?php echo $page-1; ?>">Prev</a>
-        <?php endif; ?>
-
-        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-            <?php if ($i == $page): ?>
-                <span class="current-page"><?php echo $i; ?></span>
-            <?php else: ?>
-                <a href="Supplier.php?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+        <?php if ($totalPages > 1): // Only show if multiple pages exist ?>
+            
+            <?php if ($page > 1): ?>
+                <a href="Supplier.php?page=<?php echo $page-1; ?><?php echo $searchParam; ?>">Prev</a>
             <?php endif; ?>
-        <?php endfor; ?>
 
-        <?php if ($page < $totalPages): ?>
-            <a href="Supplier.php?page=<?php echo $page+1; ?>">Next</a>
+            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                <?php if ($i == $page): ?>
+                    <span class="current-page"><?php echo $i; ?></span>
+                <?php else: ?>
+                    <a href="Supplier.php?page=<?php echo $i; ?><?php echo $searchParam; ?>"><?php echo $i; ?></a>
+                <?php endif; ?>
+            <?php endfor; ?>
+
+            <?php if ($page < $totalPages): ?>
+                <a href="Supplier.php?page=<?php echo $page+1; ?><?php echo $searchParam; ?>">Next</a>
+            <?php endif; ?>
+            
+        <?php endif; ?>
+        
+        <?php if ($totalSuppliers == 0): ?>
+            <div style="text-align:center; color:#888; width:100%; margin-top:20px;">
+                No suppliers found.
+            </div>
         <?php endif; ?>
     </div>
 
@@ -470,14 +578,25 @@ $result = mysqli_query($conn, $query);
             contentType: false,
             processData: false,
             success: function(response) {
-                // Check if the response signals a duplicate email
-                if (response.trim() === 'duplicate_email') {
+                var res = response.trim();
+
+                if (res === 'duplicate_email') {
                     alert('Error: This email address is already in use by another active supplier.');
-                } else {
-                    // Success or other response
+                } 
+                else if (res === 'error_size') {
+                    alert('Error: File is too large! Max size is 2MB.');
+                }
+                else if (res === 'error_type') {
+                    alert('Error: Invalid file type! Only JPG, PNG, and GIF are allowed.');
+                }
+                else if (res === 'success') {
+                    // Success!
                     closeSupModal();
-                    // Reload the current view to show the updated data
                     $('#ajax-result').load('Supplier.php'); 
+                } 
+                else {
+                    // Any other error (like Database errors)
+                    alert('System Error: ' + res);
                 }
             },
             error: function() {
@@ -528,4 +647,28 @@ $result = mysqli_query($conn, $query);
         // Clear all dynamically loaded content, keeping only the close button span
         $('#detailModalContent').contents().not('.close-modal').remove();
     }
+
+    // --- UPDATED: SERVER-SIDE SEARCH TRIGGER ---
+    var searchTimer; // Timer to prevent reloading on every single keystroke
+
+    //Search filter
+    $('#searchSupplierInput').on('keyup', function() {
+        var value = $(this).val();
+        
+        // Clear the previous timer
+        clearTimeout(searchTimer);
+
+        // Wait 500ms after user stops typing, then run
+        searchTimer = setTimeout(function() {
+            // Reload the #ajax-result container with the search term
+            $('#ajax-result').load('Supplier.php?search=' + encodeURIComponent(value));
+        }, 5); 
+    });
+
+    // Handle "X" (clearing the input) logic if browser supports it
+    $('#searchSupplierInput').on('search', function () {
+        if ($(this).val() === '') {
+            $('#ajax-result').load('Supplier.php');
+        }
+    });
 </script>

@@ -127,10 +127,50 @@ if ($supResult) {
         .btn-checkout:disabled { background: #bdc3c7; cursor: not-allowed; }
         .btn-back-sup { padding: 8px 15px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;}
         .search-input { padding: 8px; border: 1px solid var(--border); border-radius: 5px; width: 220px; background: var(--bg-light); color: var(--text-dark); }
+        
+        /* --- NEW: SUPPLIER SEARCH DESIGN --- */
+        .supplier-search-wrapper {
+            position: relative;
+            max-width: 400px;         /* Limits width for better aesthetic */
+            margin: 10px auto 30px auto; /* Centers the box + adds spacing below */
+        }
+
+        .sup-search-input {
+            width: 100%;
+            padding: 12px 20px 12px 45px; /* Extra left padding for the icon */
+            font-size: 15px;
+            border: 2px solid var(--border);
+            border-radius: 50px;      /* Pill/Rounded shape */
+            background: var(--card-white);
+            color: var(--text-dark);
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); /* Subtle shadow */
+        }
+
+        .sup-search-input:focus {
+            border-color: #3498db;    /* Blue border on focus */
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2); /* Blue glow */
+        }
+
+        .search-icon-overlay {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #95a5a6;
+            font-size: 16px;
+            pointer-events: none;     /* Ensures you can click 'through' the icon */
+        }
+    
     </style>
 
     <div id="view-suppliers">
         <h2 style="color: var(--text-dark);">Select Supplier</h2>
+        <div class="supplier-search-wrapper">
+            <i class="fa-solid fa-magnifying-glass search-icon-overlay"></i>
+            <input type="text" id="searchSupplier" class="sup-search-input" placeholder="Search Company Name...">
+        </div>
         <div class="supplier-grid">
             <?php foreach($suppliers as $sup): ?>
                 <div class="supplier-card" onclick="selectSupplier('<?php echo $sup['SupplierID']; ?>', '<?php echo htmlspecialchars($sup['SupplierName']); ?>')">
@@ -163,8 +203,9 @@ if ($supResult) {
                              data-name="<?php echo htmlspecialchars($prod['ProductName']); ?>"
                              data-price="<?php echo $prod['Price']; ?>">
                             
-                            <img src="../../Assets/Image/Product/<?php echo $prod['ImagePath']; ?>" alt="Product">
-                            
+                            <img src="../../Assets/Image/Product/<?php echo $prod['ImagePath']; ?>" 
+                                alt="Product" 
+                                onerror="this.onerror=null; this.src='../../Assets/Image/Product/default-product.png';">                            
                             <div class="card-info">
                                 <div class="p-name"><?php echo htmlspecialchars($prod['ProductName']); ?></div>
                                 <div class="p-meta">
@@ -371,6 +412,19 @@ if ($supResult) {
     if(currentSupplierID) {
         filterProductGrid();
     }
+
+    //Search filter
+    $('#searchSupplier').on('keyup', function() {
+        var value = $(this).val().toLowerCase();
+        
+        // Loop through all supplier cards
+        $('.supplier-card').filter(function() {
+            // Find the name inside the card
+            var supName = $(this).find('.sup-name').text().toLowerCase();
+            // Show if it matches, Hide if it doesn't
+            $(this).toggle(supName.indexOf(value) > -1);
+        });
+    });
 
 })();
 </script>

@@ -6,10 +6,8 @@ if (!isset($_SESSION['user'])) {
     exit();
 }
 
-
 require_once __DIR__ . "/../../Model/InventoryModel.php";
 $model = new InventoryModel();
-
 
 $stats = $model->getInventoryStats();
 $categoryStats = $model->getCategoryStats();
@@ -32,7 +30,6 @@ if (isset($_SESSION['flash_message'])) {
 <title>Inventory Management</title>
 <link rel="stylesheet" href="/Assets/CSS/inventory.css">
 <style>
-    /* Dark Mode Overrides for Inventory */
     .title-section h1 { color: var(--text-dark); }
     .title-section p { color: var(--text-grey); }
     .user-info span { color: var(--text-dark); }
@@ -213,7 +210,6 @@ if (isset($_SESSION['flash_message'])) {
                                     $stockStatus = 'good';
                                 }
 
-                            
                                 $hasImage = !empty($product['ImagePath']);
                                 $filename = $hasImage ? rawurlencode($product['ImagePath']) : '';
                                 $imagePath = $hasImage ? "/Assets/Image/Product/" . $filename : "";
@@ -262,8 +258,7 @@ if (isset($_SESSION['flash_message'])) {
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <button class="btn btn-primary" 
-                                            onclick="openAdjustModal('<?= $product['ProductID'] ?>', '<?= htmlspecialchars(addslashes($product['ProductName'])) ?>')">
+                                    <button class="btn btn-primary adjust-btn" data-id="<?= htmlspecialchars($product['ProductID']) ?>">
                                         <i class="fas fa-edit"></i> Adjust
                                     </button>
                                 </td>
@@ -335,7 +330,7 @@ if (isset($_SESSION['flash_message'])) {
             <div class="form-group">
                 <label class="form-label">Quantity</label>
                 <input type="number" id="inputQuantity" name="display_quantity" class="form-control" 
-                       placeholder="0" min="1" required>
+                       placeholder="0" min="1" max="1000" required>
                 <small id="quantityHelper" class="helper-text" style="color: var(--success);">
                     Adding stock to inventory
                 </small>
@@ -363,20 +358,33 @@ if (isset($_SESSION['flash_message'])) {
 </div>
 
 <script>
-let currentFilter = 'all';
-let activeCategory = 'all';
-let currentSearchTerm = '';
-let allProducts = <?= json_encode($products ?? []) ?>; 
+var currentFilter = 'all';
+var activeCategory = 'all';
+var currentSearchTerm = '';
+var allProducts = <?= json_encode($products ?? []) ?>; 
 
-const REASONS = {
+var REASONS = {
     add: ["New Shipment", "Returned Items", "Stock Count Correction", "Manual Adjustment"],
     remove: ["Sold (Offline/Manual)", "Damaged Goods", "Theft/Loss", "Expired", "Quality Control Fail", "Stock Count Correction", "Manual Adjustment"]
 };
 
-document.addEventListener('DOMContentLoaded', function() {
-    
-});
-
+if (!window.inventoryInitialized) {
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.adjust-btn');
+        if (btn) {
+            var productId = btn.dataset.id;
+            var product = allProducts.find(p => p.ProductID == productId);
+            
+            if (product) {
+                openAdjustModal(product.ProductID, product.ProductName);
+            } else {
+                console.error("Product not found in local data:", productId);
+                alert("Error: Product data not found. Please refresh the page.");
+            }
+        }
+    });
+    window.inventoryInitialized = true;
+}
 
 function showTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -385,23 +393,22 @@ function showTab(tabName) {
     event.target.classList.add('active');
 }
 
-
-const modal = document.getElementById('adjustModal');
+var adjustModal = document.getElementById('adjustModal');
 
 function openAdjustModal(productId, productName) {
     document.getElementById('modalProductId').value = productId;
     document.getElementById('modalProductName').textContent = productName;
     setAdjustmentType('add');
     document.getElementById('inputQuantity').value = '';
-    modal.style.display = 'flex';
+    adjustModal.style.display = 'flex';
 }
 
 function closeModal() {
-    modal.style.display = 'none';
+    adjustModal.style.display = 'none';
     document.getElementById('adjustStockForm').reset();
 }
 
-window.onclick = e => { if (e.target === modal) closeModal(); };
+window.onclick = function(e) { if (e.target === adjustModal) closeModal(); };
 
 function setAdjustmentType(type) {
     document.getElementById('adjustmentType').value = type;
@@ -410,8 +417,8 @@ function setAdjustmentType(type) {
         if(btn.dataset.type === type) btn.classList.add('active');
     });
 
-    const helper = document.getElementById('quantityHelper');
-    const submitBtn = document.getElementById('submitBtn');
+    var helper = document.getElementById('quantityHelper');
+    var submitBtn = document.getElementById('submitBtn');
     
     if (type === 'add') {
         helper.textContent = "Valid stock will be added to the current count.";
@@ -428,66 +435,74 @@ function setAdjustmentType(type) {
 }
 
 function updateReasonDropdown(type) {
-    const select = document.getElementById('reasonSelect');
+    var select = document.getElementById('reasonSelect');
     select.innerHTML = '<option value="">Select a reason</option>';
     REASONS[type].forEach(reason => {
-        const option = document.createElement('option');
+        var option = document.createElement('option');
         option.value = reason;
         option.textContent = reason;
         select.appendChild(option);
     });
 }
 
-
-document.getElementById('adjustStockForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const type = document.getElementById('adjustmentType').value;
-    const inputQty = parseFloat(document.getElementById('inputQuantity').value);
-    const reason = document.getElementById('reasonSelect').value;
-    
-    if (!inputQty || inputQty <= 0) { alert("Please enter a valid positive quantity."); return; }
-    if (!reason) { alert("Please select a reason."); return; }
-
-    let finalQuantity = (type === 'remove') ? -Math.abs(inputQty) : inputQty;
-
-    const formData = new FormData();
-    formData.append('product_id', document.getElementById('modalProductId').value);
-    formData.append('quantity', finalQuantity);
-    formData.append('reason', reason);
-
-    const submitButton = document.getElementById('submitBtn');
-    const originalText = submitButton.innerHTML;
-    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-    submitButton.disabled = true;
-
-    fetch('/Controller/InventoryController.php?action=adjustStock', {
-        method: 'POST',
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            allProducts = data.products;
-            updateStatsCards(data.stats);
-            if (data.logs) updateLogsTable(data.logs);
-            refreshTableData();
-            
-            showAlert(data.message, 'success');
-            closeModal();
-        } else {
-            showAlert(data.message || 'Operation failed', 'error');
+var adjustForm = document.getElementById('adjustStockForm');
+if (adjustForm) {
+    adjustForm.onsubmit = function(e) {
+        e.preventDefault();
+        
+        var type = document.getElementById('adjustmentType').value;
+        var inputQty = parseFloat(document.getElementById('inputQuantity').value);
+        var reason = document.getElementById('reasonSelect').value;
+        
+        if (!inputQty || inputQty <= 0) { alert("Please enter a valid positive quantity."); return; }
+        
+        if (inputQty > 1000) {
+            alert("Maximum limit exceeded. You can only add/remove up to 1000 items at a time.");
+            return;
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showAlert('An error occurred.', 'error');
-    })
-    .finally(() => {
-        submitButton.innerHTML = originalText;
-        submitButton.disabled = false;
-    });
-});
+
+        if (!reason) { alert("Please select a reason."); return; }
+
+        var finalQuantity = (type === 'remove') ? -Math.abs(inputQty) : inputQty;
+
+        var formData = new FormData();
+        formData.append('product_id', document.getElementById('modalProductId').value);
+        formData.append('quantity', finalQuantity);
+        formData.append('reason', reason);
+
+        var submitButton = document.getElementById('submitBtn');
+        var originalText = submitButton.innerHTML;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        submitButton.disabled = true;
+
+        fetch('/Controller/InventoryController.php?action=adjustStock', {
+            method: 'POST',
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                allProducts = data.products;
+                updateStatsCards(data.stats);
+                if (data.logs) updateLogsTable(data.logs);
+                refreshTableData();
+                
+                showAlert(data.message, 'success');
+                closeModal();
+            } else {
+                showAlert(data.message || 'Operation failed', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('An error occurred.', 'error');
+        })
+        .finally(() => {
+            submitButton.innerHTML = originalText;
+            submitButton.disabled = false;
+        });
+    };
+}
 
 function updateAllData() {
     fetch('/Controller/InventoryController.php?action=getAllProducts')
@@ -504,26 +519,25 @@ function updateAllData() {
 }
 
 function updateStatsCards(stats) {
-    const statValues = document.querySelectorAll('.stat-card .stat-value');
+    var statValues = document.querySelectorAll('.stat-card .stat-value');
     if (statValues.length >= 3) {
         statValues[0].textContent = stats.totalProducts || stats.total_products;
         
-        const low = parseInt(stats.lowStockCount || stats.low_stock_count || 0);
-        const out = parseInt(stats.outOfStockCount || stats.out_of_stock_count || 0);
+        var low = parseInt(stats.lowStockCount || stats.low_stock_count || 0);
+        var out = parseInt(stats.outOfStockCount || stats.out_of_stock_count || 0);
         statValues[1].textContent = low;
         statValues[2].textContent = out;
     }
     
-    const valueElement = document.getElementById('totalStockValueDisplay');
+    var valueElement = document.getElementById('totalStockValueDisplay');
     if (valueElement) {
-        const totalValue = parseFloat(stats.total_inventory_value || stats.totalStockValue || 0);
+        var totalValue = parseFloat(stats.total_inventory_value || stats.totalStockValue || 0);
         valueElement.textContent = 'RM ' + totalValue.toLocaleString('en-US', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
     }
 }
-
 
 function toggleCategoryDropdown() {
     document.getElementById('categoryDropdown').classList.toggle('show');
@@ -544,8 +558,8 @@ function selectCategory(category, categoryName) {
         if(opt.querySelector('.cat-name').textContent === categoryName) opt.classList.add('active');
     });
 
-    const clearBtn = document.getElementById('clearCategoryBtn');
-    const arrow = document.getElementById('categoryDropdownArrow');
+    var clearBtn = document.getElementById('clearCategoryBtn');
+    var arrow = document.getElementById('categoryDropdownArrow');
     
     if (category === 'all') {
         clearBtn.style.display = 'none';
@@ -564,7 +578,7 @@ function applyFilter(filterType) {
     currentFilter = filterType;
     document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active'));
     if (filterType !== 'all') {
-        const activeCard = document.querySelector(`.stat-card[data-filter="${filterType}"]`);
+        var activeCard = document.querySelector(`.stat-card[data-filter="${filterType}"]`);
         if (activeCard) activeCard.classList.add('active');
     }
     refreshTableData();
@@ -585,9 +599,8 @@ document.getElementById('clear-filter').addEventListener('click', function() {
     refreshTableData();
 });
 
-
 function refreshTableData() {
-    let filtered = allProducts;
+    var filtered = allProducts;
     
     if (activeCategory !== 'all') {
         filtered = filtered.filter(p => p.Category === activeCategory);
@@ -608,12 +621,12 @@ function refreshTableData() {
 }
 
 function updateFilterText(count) {
-    const indicator = document.getElementById('filter-indicator');
+    var indicator = document.getElementById('filter-indicator');
     if (currentFilter === 'all' && activeCategory === 'all' && currentSearchTerm === '') {
         indicator.style.display = 'none';
         return;
     }
-    let details = [];
+    var details = [];
     if (activeCategory !== 'all') details.push(`Category: <strong>${activeCategory}</strong>`);
     if (currentFilter === 'low-stock') details.push(`Status: <strong>Low Stock</strong>`);
     if (currentFilter === 'out-of-stock') details.push(`Status: <strong>Out of Stock</strong>`);
@@ -624,13 +637,13 @@ function updateFilterText(count) {
 }
 
 function updateLogsTable(logs) {
-    const tbody = document.querySelector('#logs table tbody');
+    var tbody = document.querySelector('#logs table tbody');
     if (!tbody) return;
     if (logs.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" class="empty-state-cell"><div class="empty-state"><i class="fas fa-history"></i><h3>No Movement Logs</h3><p>Stock adjustments will appear here once made.</p></div></td></tr>`;
         return;
     }
-    let html = '';
+    var html = '';
     logs.forEach(log => {
         html += `
             <tr>
@@ -643,13 +656,11 @@ function updateLogsTable(logs) {
     tbody.innerHTML = html;
 }
 
-// --- HTML Generators ---
 function updateProductsTable(products) {
-    const tbody = document.querySelector('#stock table tbody');
-    const thead = document.querySelector('#stock table thead tr');
-    // Ensure table header for Image exists
+    var tbody = document.querySelector('#stock table tbody');
+    var thead = document.querySelector('#stock table thead tr');
     if (thead && !thead.querySelector('.th-image')) {
-        const th = document.createElement('th');
+        var th = document.createElement('th');
         th.className = 'th-image';
         th.textContent = 'Image';
         thead.insertBefore(th, thead.firstElementChild);
@@ -662,22 +673,22 @@ function updateProductsTable(products) {
         return;
     }
     
-    let html = '';
+    var html = '';
     products.forEach(product => {
-        const stock = parseInt(product.Stock);
-        const alert = parseInt(product.LowStockAlert);
-        let stockStatus = (stock == 0) ? 'out-of-stock' : (stock <= alert ? 'low-stock' : (stock <= alert * 2 ? 'warning' : 'good'));
+        var stock = parseInt(product.Stock);
+        var alert = parseInt(product.LowStockAlert);
+        var stockStatus = (stock == 0) ? 'out-of-stock' : (stock <= alert ? 'low-stock' : (stock <= alert * 2 ? 'warning' : 'good'));
         
-        let badge = '';
+        var badge = '';
         if(stockStatus === 'out-of-stock') badge = '<span class="badge badge-danger">Out of Stock</span>';
         else if(stockStatus === 'low-stock') badge = '<span class="badge badge-danger">Low Stock</span>';
         else if(stockStatus === 'warning') badge = '<span class="badge badge-warning">Watch</span>';
         else badge = '<span class="badge badge-success">Good</span>';
         
     
-        let imageHtml = '';
+        var imageHtml = '';
         if (product.ImagePath && product.ImagePath.trim() !== "") {
-            const imgSrc = `/Assets/Image/Product/${encodeURIComponent(product.ImagePath)}`; 
+            var imgSrc = `/Assets/Image/Product/${encodeURIComponent(product.ImagePath)}`; 
             imageHtml = `<img src="${imgSrc}" class="product-thumb" onclick="openImageModal('${imgSrc}')" alt="Img" onerror="this.parentNode.innerHTML='<div class=\\'no-image-placeholder\\'><i class=\\'fas fa-image\\'></i></div>'">`;
         } else {
             imageHtml = `<div class="no-image-placeholder"><i class="fas fa-image"></i></div>`;
@@ -695,7 +706,7 @@ function updateProductsTable(products) {
                 <td>RM ${parseFloat(product.Price).toFixed(2)}</td>
                 <td>${badge}</td>
                 <td>
-                    <button class="btn btn-primary" onclick="openAdjustModal('${product.ProductID}', '${escapeHtml(product.ProductName).replace(/'/g, "\\'")}')">
+                    <button class="btn btn-primary adjust-btn" data-id="${escapeHtml(product.ProductID)}">
                         <i class="fas fa-edit"></i> Adjust
                     </button>
                 </td>
@@ -706,28 +717,27 @@ function updateProductsTable(products) {
 
 function escapeHtml(text) {
     if (text == null) return '';
-    const div = document.createElement('div');
+    var div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
 function showAlert(message, type) {
-    const existingAlert = document.querySelector('.alert');
+    var existingAlert = document.querySelector('.alert');
     if (existingAlert) existingAlert.remove();
     
-    const alert = document.createElement('div');
+    var alert = document.createElement('div');
     alert.className = `alert alert-${type}`;
     alert.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>${message}`;
     
-    const header = document.querySelector('.header');
+    var header = document.querySelector('.header');
     header.parentNode.insertBefore(alert, header.nextSibling);
     setTimeout(() => { if (alert.parentNode) alert.remove(); }, 5000);
 }
 
-
 function openImageModal(src) {
-    const modal = document.getElementById('imageModal');
-    const modalImg = document.getElementById("fullSizeImage");
+    var modal = document.getElementById('imageModal');
+    var modalImg = document.getElementById("fullSizeImage");
     modal.style.display = "flex";
     modalImg.src = src;
 }
@@ -743,11 +753,9 @@ document.addEventListener('keydown', e => {
     }
 });
 
-
-
 function loadImage(url) {
     return new Promise((resolve) => {
-        const img = new Image();
+        var img = new Image();
         img.crossOrigin = "Anonymous"; 
         img.src = url;
         img.onload = () => resolve(img);
@@ -755,14 +763,13 @@ function loadImage(url) {
     });
 }
 
-
 function loadScript(url) {
     return new Promise((resolve, reject) => {
         if (document.querySelector(`script[src="${url}"]`)) {
             resolve();
             return;
         }
-        const script = document.createElement('script');
+        var script = document.createElement('script');
         script.src = url;
         script.onload = resolve;
         script.onerror = reject;
@@ -770,19 +777,17 @@ function loadScript(url) {
     });
 }
 
-
 async function ensurePDFLibraries() {
     if (!window.jspdf) {
         await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
     }
     
-
     if (!window.jsPDF && window.jspdf) {
         window.jsPDF = window.jspdf.jsPDF;
     }
 
     try {
-        const tempDoc = new window.jsPDF();
+        var tempDoc = new window.jsPDF();
         if (typeof tempDoc.autoTable !== 'function') {
             await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js");
         }
@@ -791,49 +796,45 @@ async function ensurePDFLibraries() {
     }
 }
 
-
 async function generatePDF() {
-    const btn = document.querySelector('button[onclick="generatePDF()"]');
-    const originalText = btn.innerHTML;
+    var btn = document.querySelector('button[onclick="generatePDF()"]');
+    var originalText = btn.innerHTML;
     
-
     btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Loading Libs...';
     btn.disabled = true;
 
     try {
-
         await ensurePDFLibraries();
 
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
 
-        const doc = new window.jsPDF();
-        const logoUrl = '/Assets/Icon/2ENTRAL-1.png'; 
-        const date = new Date().toLocaleString();
-        const userName = "<?= htmlspecialchars($currentUser ?? 'User') ?>";
-        const primaryColor = [75, 163, 195];
-        const productImages = {};
-        const logoImg = await loadImage(logoUrl);
+        var doc = new window.jsPDF();
+        var logoUrl = '/Assets/Icon/2ENTRAL-1.png'; 
+        var date = new Date().toLocaleString();
+        var userName = "<?= htmlspecialchars($currentUser ?? 'User') ?>";
+        var primaryColor = [75, 163, 195];
+        var productImages = {};
+        var logoImg = await loadImage(logoUrl);
 
-        const imagePromises = allProducts.map(async (p) => {
+        var imagePromises = allProducts.map(async (p) => {
             if (p.ImagePath && p.ImagePath.trim() !== "") {
-                const path = `/Assets/Image/Product/${encodeURIComponent(p.ImagePath)}`;
-                const img = await loadImage(path);
+                var path = `/Assets/Image/Product/${encodeURIComponent(p.ImagePath)}`;
+                var img = await loadImage(path);
                 if (img) productImages[p.ProductID] = img;
             }
         });
         await Promise.all(imagePromises);
 
-
-        let totalValue = 0;
-        let lowStockItems = 0;
-        let outOfStockItems = 0;
-        const categorySummary = {};
+        var totalValue = 0;
+        var lowStockItems = 0;
+        var outOfStockItems = 0;
+        var categorySummary = {};
 
         allProducts.forEach(p => {
-            const stock = parseInt(p.Stock);
-            const price = parseFloat(p.Price);
-            const alert = parseInt(p.LowStockAlert);
-            const val = stock * price;
+            var stock = parseInt(p.Stock);
+            var price = parseFloat(p.Price);
+            var alert = parseInt(p.LowStockAlert);
+            var val = stock * price;
             
             totalValue += val;
             if (stock === 0) outOfStockItems++;
@@ -845,7 +846,6 @@ async function generatePDF() {
             categorySummary[p.Category].count += 1;
             categorySummary[p.Category].value += val;
         });
-
 
         if (logoImg) {
             doc.addImage(logoImg, 'PNG', 14, 10, 25, 25);
@@ -885,11 +885,10 @@ async function generatePDF() {
         else doc.setTextColor(39, 174, 96);
         doc.text(`${lowStockItems} Low Stock / ${outOfStockItems} Out of Stock`, 100, 71);
 
-
-        const tableBody = allProducts.map(p => {
-            const stock = parseInt(p.Stock);
-            const alert = parseInt(p.LowStockAlert);
-            let status = "Good";
+        var tableBody = allProducts.map(p => {
+            var stock = parseInt(p.Stock);
+            var alert = parseInt(p.LowStockAlert);
+            var status = "Good";
             if (stock === 0) status = "Out of Stock";
             else if (stock <= alert) status = "Low Stock";
             
@@ -904,7 +903,6 @@ async function generatePDF() {
             ];
         });
 
-    
         doc.autoTable({
             startY: 85,
             head: [['Image', 'ID', 'Product Name', 'Category', 'Stock', 'Price', 'Status']],
@@ -920,7 +918,7 @@ async function generatePDF() {
             
             didParseCell: function(data) {
                 if (data.section === 'body' && data.column.index === 6) {
-                    const status = data.cell.raw;
+                    var status = data.cell.raw;
                     if (status === 'Out of Stock') {
                         data.cell.styles.textColor = [231, 76, 60]; 
                     } else if (status === 'Low Stock') {
@@ -931,11 +929,10 @@ async function generatePDF() {
                 }
             },
 
-    
             didDrawCell: function(data) {
                 if (data.section === 'body' && data.column.index === 0) {
-                    const productId = data.row.raw[1]; 
-                    const img = productImages[productId];
+                    var productId = data.row.raw[1]; 
+                    var img = productImages[productId];
                     if (img) {
                         doc.addImage(img, 'JPEG', data.cell.x + 2, data.cell.y + 2, 11, 11);
                     }
@@ -943,15 +940,17 @@ async function generatePDF() {
             }
         });
 
-        let finalY = doc.lastAutoTable.finalY + 15;
-        if (finalY > 250) { doc.addPage(); finalY = 20; }
+        var finalY = doc.lastAutoTable.finalY + 15;
+        if (finalY > 250) { 
+            doc.addPage(); 
+            finalY = 20; 
+        }
 
-   
         doc.setFontSize(14);
         doc.setTextColor(44, 62, 80);
         doc.text("Summary by Category", 14, finalY);
         
-        const catBody = Object.keys(categorySummary).map(cat => [
+        var catBody = Object.keys(categorySummary).map(cat => [
             cat,
             categorySummary[cat].count,
             `RM ${categorySummary[cat].value.toLocaleString('en-US', {minimumFractionDigits: 2})}`
@@ -967,18 +966,21 @@ async function generatePDF() {
             styles: { fontSize: 10 }
         });
 
-        
-        let signatureY = doc.lastAutoTable.finalY + 30; 
-        const pageHeight = doc.internal.pageSize.height;
+        var pageHeight = doc.internal.pageSize.height;
+        var signatureY = doc.lastAutoTable.finalY + 30;
 
-
-        if (signatureY + 20 > pageHeight) {
-            doc.addPage();
+        if (signatureY + 40 > pageHeight) {
+            doc.addPage(); 
             signatureY = 40; 
+        } else {
+            
+            signatureY = Math.max(signatureY, pageHeight - 40);
         }
 
         doc.setDrawColor(150);
         doc.setLineWidth(0.5);
+        
+      
         doc.line(20, signatureY, 80, signatureY);
         doc.setFontSize(10);
         doc.setTextColor(100);
